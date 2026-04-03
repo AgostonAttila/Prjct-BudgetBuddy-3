@@ -1,0 +1,6 @@
+@BudgetBuddy.API.EventDriven_HostAddress = http://localhost:5260
+
+GET {{BudgetBuddy.API.EventDriven_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

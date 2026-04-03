@@ -1,0 +1,25 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'budgetbuddy'
+    environment: 'development'
+
+rule_files:
+  - 'alerts.yml'
+
+scrape_configs:
+  # BudgetBuddy API Metrics
+  - job_name: 'budgetbuddy-api'
+    static_configs:
+      - targets: ['host.docker.internal:5160']
+        labels:
+          service: 'budgetbuddy-api'
+          instance: 'local'
+    scrape_interval: 10s
+    metrics_path: '/metrics'
+
+  # Prometheus Self-Monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

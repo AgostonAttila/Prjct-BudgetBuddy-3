@@ -1,0 +1,12 @@
+using BudgetBuddy.API.VSA.Features.BudgetAlerts.GetBudgetAlerts;
+
+namespace BudgetBuddy.API.VSA.Features.BudgetAlerts.Services;
+
+public interface IBudgetAlertCalculationService
+{
+    Task<IReadOnlyList<BudgetAlertDto>> CalculateAlertsAsync(
+        string userId,
+        int year,
+        int month,
+        CancellationToken cancellationToken = default);
+}

@@ -1,0 +1,22 @@
+using BudgetBuddy.API.VSA.Common.Domain.Entities;
+
+namespace BudgetBuddy.API.VSA.Features.Security.GetSecurityEvents;
+
+public record GetSecurityEventsQuery(
+    int PageSize = 50,
+    SecurityEventSeverity? MinSeverity = null
+) : IRequest<List<SecurityEventResponse>>;
+
+public record SecurityEventResponse(
+    Guid Id,
+    SecurityEventType EventType,
+    SecurityEventSeverity Severity,
+    string Message,
+    string? UserId,
+    string? UserIdentifier,
+    string? IpAddress,
+    string? Endpoint,
+    bool IsAlert,
+    bool IsReviewed,
+    DateTime CreatedAt
+);

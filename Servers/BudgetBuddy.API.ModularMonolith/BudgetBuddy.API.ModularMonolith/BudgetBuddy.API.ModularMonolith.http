@@ -1,0 +1,6 @@
+@BudgetBuddy.API.ModularMonolith_HostAddress = http://localhost:5178
+
+GET {{BudgetBuddy.API.ModularMonolith_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

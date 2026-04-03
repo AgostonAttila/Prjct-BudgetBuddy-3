@@ -1,0 +1,590 @@
+### BudgetBuddy API - HTTP Requests
+### Visual Studio / Rider / VS Code REST Client
+### https://learn.microsoft.com/en-us/aspnet/core/test/http-files
+
+@baseUrl = https://localhost:5001
+@bearerToken = your_token_here
+@accountId =
+@categoryId =
+@categoryTypeId =
+@transactionId =
+@budgetId =
+@investmentId =
+
+###############################################################################
+# 🔐 AUTHENTICATION
+###############################################################################
+
+### Register User
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123!@#",
+  "confirmPassword": "Test123!@#"
+}
+
+### Login (Bearer Token)
+# @name login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123!@#"
+}
+
+### Extract token from login response (VS Code REST Client)
+# @bearerToken = {{login.response.body.accessToken}}
+
+### Login (Cookie Auth)
+POST {{baseUrl}}/auth/login?useCookies=true
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Test123!@#"
+}
+
+### Get CSRF Token
+GET {{baseUrl}}/auth/csrf-token
+
+### Logout
+POST {{baseUrl}}/auth/logout
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 🔐 TWO-FACTOR AUTHENTICATION
+###############################################################################
+
+### Get Two-Factor Status
+GET {{baseUrl}}/api/twofactor/status
+Authorization: Bearer {{bearerToken}}
+
+### Enable Two-Factor
+POST {{baseUrl}}/api/twofactor/enable
+Authorization: Bearer {{bearerToken}}
+
+### Verify Two-Factor Setup
+POST {{baseUrl}}/api/twofactor/verify
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "code": "123456"
+}
+
+### Disable Two-Factor
+POST {{baseUrl}}/api/twofactor/disable
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "password": "Test123!@#"
+}
+
+### Get Recovery Codes (Generate New)
+POST {{baseUrl}}/api/twofactor/recovery-codes?generateNew=true&batchNumber=1
+Authorization: Bearer {{bearerToken}}
+
+### Get Recovery Codes (Batch 2)
+POST {{baseUrl}}/api/twofactor/recovery-codes?batchNumber=2
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 💼 ACCOUNTS
+###############################################################################
+
+### Create Account
+# @name createAccount
+POST {{baseUrl}}/api/accounts
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+Idempotency-Key: {{$guid}}
+
+{
+  "name": "Savings Account",
+  "description": "My personal savings",
+  "defaultCurrencyCode": "USD",
+  "initialBalance": 1000.00
+}
+
+### Get All Accounts
+GET {{baseUrl}}/api/accounts
+Authorization: Bearer {{bearerToken}}
+
+### Get Account Balance
+GET {{baseUrl}}/api/accounts/{{accountId}}/balance
+Authorization: Bearer {{bearerToken}}
+
+### Update Account
+PUT {{baseUrl}}/api/accounts/{{accountId}}
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Savings Account",
+  "description": "Updated description",
+  "defaultCurrencyCode": "EUR",
+  "initialBalance": 1500.00
+}
+
+### Delete Account
+DELETE {{baseUrl}}/api/accounts/{{accountId}}
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 💸 TRANSACTIONS
+###############################################################################
+
+### Create Transaction
+# @name createTransaction
+POST {{baseUrl}}/api/transactions
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+Idempotency-Key: {{$guid}}
+
+{
+  "accountId": "{{accountId}}",
+  "categoryId": "{{categoryId}}",
+  "typeId": null,
+  "amount": 50.00,
+  "currencyCode": "USD",
+  "refCurrencyAmount": null,
+  "transactionType": "Expense",
+  "paymentType": "Card",
+  "note": "Coffee at Starbucks",
+  "transactionDate": "2024-01-15",
+  "isTransfer": false,
+  "payee": "Starbucks",
+  "labels": "food,coffee"
+}
+
+### Get Transactions (with pagination and filters)
+GET {{baseUrl}}/api/transactions?pageNumber=1&pageSize=50&startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{bearerToken}}
+
+### Get Transactions (with search)
+GET {{baseUrl}}/api/transactions?search=coffee&pageNumber=1&pageSize=20
+Authorization: Bearer {{bearerToken}}
+
+### Get Transactions (filtered by account and category)
+GET {{baseUrl}}/api/transactions?accountId={{accountId}}&categoryId={{categoryId}}&type=Expense
+Authorization: Bearer {{bearerToken}}
+
+### Update Transaction
+PUT {{baseUrl}}/api/transactions/{{transactionId}}
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "accountId": "{{accountId}}",
+  "categoryId": "{{categoryId}}",
+  "amount": 55.00,
+  "currencyCode": "USD",
+  "transactionType": "Expense",
+  "paymentType": "Card",
+  "note": "Updated: Coffee + Muffin",
+  "transactionDate": "2024-01-15"
+}
+
+### Delete Transaction
+DELETE {{baseUrl}}/api/transactions/{{transactionId}}
+Authorization: Bearer {{bearerToken}}
+
+### Batch Delete Transactions
+DELETE {{baseUrl}}/api/transactions/batch-delete
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "ids": [
+    "guid-1",
+    "guid-2",
+    "guid-3"
+  ]
+}
+
+### Batch Update Transactions
+PUT {{baseUrl}}/api/transactions/batch-update
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "ids": ["guid-1", "guid-2"],
+  "categoryId": "{{categoryId}}",
+  "labels": "updated,batch"
+}
+
+### Export Transactions (Excel)
+GET {{baseUrl}}/api/transactions/export?format=xlsx&startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{bearerToken}}
+
+### Export Transactions (CSV)
+GET {{baseUrl}}/api/transactions/export?format=csv&startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{bearerToken}}
+
+### Import Transactions
+# Note: File upload not supported in .http files - use Postman or Swagger UI
+# POST {{baseUrl}}/api/transactions/import
+
+###############################################################################
+# 🔄 TRANSFERS
+###############################################################################
+
+### Create Transfer
+POST {{baseUrl}}/api/transfers
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+Idempotency-Key: {{$guid}}
+
+{
+  "fromAccountId": "guid-from-account",
+  "toAccountId": "guid-to-account",
+  "amount": 100.00,
+  "currencyCode": "USD",
+  "paymentType": "BankTransfer",
+  "note": "Transfer to savings",
+  "transferDate": "2024-01-15"
+}
+
+###############################################################################
+# 💼 BUDGETS
+###############################################################################
+
+### Create Budget
+# @name createBudget
+POST {{baseUrl}}/api/budgets
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+Idempotency-Key: {{$guid}}
+
+{
+  "name": "Monthly Food Budget",
+  "categoryId": "{{categoryId}}",
+  "amount": 500.00,
+  "currencyCode": "USD",
+  "year": 2024,
+  "month": 1
+}
+
+### Get Budgets
+GET {{baseUrl}}/api/budgets?year=2024&month=1
+Authorization: Bearer {{bearerToken}}
+
+### Get Budget vs Actual
+GET {{baseUrl}}/api/budgets/vs-actual?year=2024&month=1
+Authorization: Bearer {{bearerToken}}
+
+### Update Budget
+PUT {{baseUrl}}/api/budgets/{{budgetId}}
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Food Budget",
+  "categoryId": "{{categoryId}}",
+  "amount": 600.00,
+  "currencyCode": "USD",
+  "year": 2024,
+  "month": 1
+}
+
+### Delete Budget
+DELETE {{baseUrl}}/api/budgets/{{budgetId}}
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 🏷️ CATEGORIES
+###############################################################################
+
+### Create Category
+# @name createCategory
+POST {{baseUrl}}/api/categories
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "name": "Food & Dining",
+  "icon": "🍔",
+  "color": "#FF5722"
+}
+
+### Get Categories
+GET {{baseUrl}}/api/categories
+Authorization: Bearer {{bearerToken}}
+
+### Update Category
+PUT {{baseUrl}}/api/categories/{{categoryId}}
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "name": "Food & Drinks",
+  "icon": "🍕",
+  "color": "#FF5722"
+}
+
+### Delete Category
+DELETE {{baseUrl}}/api/categories/{{categoryId}}
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 🏷️ CATEGORY TYPES
+###############################################################################
+
+### Create Category Type
+# @name createCategoryType
+POST {{baseUrl}}/api/category-types
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "name": "Subscription",
+  "categoryId": "{{categoryId}}",
+  "description": "Recurring monthly subscriptions"
+}
+
+### Get Category Types
+GET {{baseUrl}}/api/category-types?page=1&pageSize=50
+Authorization: Bearer {{bearerToken}}
+
+### Get Category Types (filtered by category)
+GET {{baseUrl}}/api/category-types?categoryId={{categoryId}}&page=1&pageSize=50
+Authorization: Bearer {{bearerToken}}
+
+### Update Category Type
+PUT {{baseUrl}}/api/category-types/{{categoryTypeId}}
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "name": "Updated Subscription",
+  "categoryId": "{{categoryId}}",
+  "description": "Updated description"
+}
+
+### Delete Category Type
+DELETE {{baseUrl}}/api/category-types/{{categoryTypeId}}
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 💱 CURRENCIES
+###############################################################################
+
+### Create Currency
+POST {{baseUrl}}/api/currencies
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "code": "USD",
+  "name": "US Dollar",
+  "symbol": "$"
+}
+
+### Get Currencies
+GET {{baseUrl}}/api/currencies
+Authorization: Bearer {{bearerToken}}
+
+### Update Currency
+PUT {{baseUrl}}/api/currencies/USD
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "code": "USD",
+  "name": "United States Dollar",
+  "symbol": "$"
+}
+
+### Delete Currency
+DELETE {{baseUrl}}/api/currencies/USD
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 📈 INVESTMENTS
+###############################################################################
+
+### Create Investment
+# @name createInvestment
+POST {{baseUrl}}/api/investments
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+Idempotency-Key: {{$guid}}
+
+{
+  "symbol": "AAPL",
+  "name": "Apple Inc.",
+  "type": "Stock",
+  "quantity": 10,
+  "purchasePrice": 150.00,
+  "currencyCode": "USD",
+  "purchaseDate": "2024-01-15",
+  "note": "Long-term hold",
+  "accountId": "{{accountId}}"
+}
+
+### Get Investments (with pagination)
+GET {{baseUrl}}/api/investments?pageNumber=1&pageSize=50
+Authorization: Bearer {{bearerToken}}
+
+### Get Investments (filtered by type)
+GET {{baseUrl}}/api/investments?type=Stock&pageNumber=1&pageSize=50
+Authorization: Bearer {{bearerToken}}
+
+### Get Investments (with search)
+GET {{baseUrl}}/api/investments?search=apple&pageNumber=1&pageSize=50
+Authorization: Bearer {{bearerToken}}
+
+### Get Portfolio Value
+GET {{baseUrl}}/api/investments/portfolio-value?currency=USD
+Authorization: Bearer {{bearerToken}}
+
+### Update Investment
+PUT {{baseUrl}}/api/investments/{{investmentId}}
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "symbol": "AAPL",
+  "name": "Apple Inc.",
+  "type": "Stock",
+  "quantity": 15,
+  "purchasePrice": 155.00,
+  "currencyCode": "USD",
+  "purchaseDate": "2024-01-15",
+  "note": "Added more shares"
+}
+
+### Delete Investment
+DELETE {{baseUrl}}/api/investments/{{investmentId}}
+Authorization: Bearer {{bearerToken}}
+
+### Batch Delete Investments
+DELETE {{baseUrl}}/api/investments/batch-delete
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "ids": [
+    "guid-1",
+    "guid-2"
+  ]
+}
+
+### Export Investments (Excel)
+GET {{baseUrl}}/api/investments/export?format=xlsx
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 📊 REPORTS
+###############################################################################
+
+### Get Income vs Expense
+GET {{baseUrl}}/api/reports/income-vs-expense?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{bearerToken}}
+
+### Get Income vs Expense (filtered by account)
+GET {{baseUrl}}/api/reports/income-vs-expense?startDate=2024-01-01&endDate=2024-12-31&accountId={{accountId}}
+Authorization: Bearer {{bearerToken}}
+
+### Get Spending by Category
+GET {{baseUrl}}/api/reports/spending-by-category?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{bearerToken}}
+
+### Get Monthly Summary
+GET {{baseUrl}}/api/reports/monthly-summary?year=2024&month=1
+Authorization: Bearer {{bearerToken}}
+
+### Get Investment Performance
+GET {{baseUrl}}/api/reports/investment-performance?startDate=2024-01-01&endDate=2024-12-31
+Authorization: Bearer {{bearerToken}}
+
+### Get Investment Performance (filtered by type)
+GET {{baseUrl}}/api/reports/investment-performance?startDate=2024-01-01&endDate=2024-12-31&type=Stock
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 📈 DASHBOARD
+###############################################################################
+
+### Get Dashboard
+GET {{baseUrl}}/api/dashboard
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# ⚙️ USER SETTINGS
+###############################################################################
+
+### Get User Settings
+GET {{baseUrl}}/api/user-settings
+Authorization: Bearer {{bearerToken}}
+
+### Update User Settings
+PUT {{baseUrl}}/api/user-settings
+Authorization: Bearer {{bearerToken}}
+Content-Type: application/json
+
+{
+  "preferredLanguage": "en-US",
+  "defaultCurrency": "USD",
+  "dateFormat": "yyyy-MM-dd"
+}
+
+###############################################################################
+# 🔔 BUDGET ALERTS
+###############################################################################
+
+### Get Budget Alerts
+GET {{baseUrl}}/api/budget-alerts?year=2024&month=1
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 🔒 SECURITY (Admin Only)
+###############################################################################
+
+### Get Security Events
+GET {{baseUrl}}/api/security/events?pageSize=50&minSeverity=Info
+Authorization: Bearer {{bearerToken}}
+
+### Get Security Events (High severity only)
+GET {{baseUrl}}/api/security/events?pageSize=50&minSeverity=High
+Authorization: Bearer {{bearerToken}}
+
+### Get Security Alerts
+GET {{baseUrl}}/api/security/alerts
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 📋 AUDIT HISTORY (Admin Only)
+###############################################################################
+
+### Get Audit History for Account
+GET {{baseUrl}}/api/audit/Account/{{accountId}}
+Authorization: Bearer {{bearerToken}}
+
+### Get Audit History for Transaction
+GET {{baseUrl}}/api/audit/Transaction/{{transactionId}}
+Authorization: Bearer {{bearerToken}}
+
+### Get Audit History for Budget
+GET {{baseUrl}}/api/audit/Budget/{{budgetId}}
+Authorization: Bearer {{bearerToken}}
+
+###############################################################################
+# 🏥 HEALTH CHECKS
+###############################################################################
+
+### Health Check
+GET {{baseUrl}}/health
+
+### Health Check (Ready)
+GET {{baseUrl}}/health/ready
+
+### Health Check (Live)
+GET {{baseUrl}}/health/live
+
+### Prometheus Metrics
+GET {{baseUrl}}/metrics

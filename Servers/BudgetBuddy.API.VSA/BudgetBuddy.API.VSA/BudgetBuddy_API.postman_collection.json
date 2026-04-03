@@ -1,0 +1,1605 @@
+{
+	"info": {
+		"_postman_id": "budgetbuddy-api-2024",
+		"name": "BudgetBuddy API",
+		"description": "Complete API collection for BudgetBuddy - Personal Finance Management System\n\n## Features\n- 🔐 Authentication (Cookie + Bearer Token)\n- 🔐 Two-Factor Authentication (TOTP)\n- 💰 Accounts Management\n- 📊 Transactions & Transfers\n- 💼 Budgets & Categories\n- 🏷️ Category Types\n- 💱 Currencies\n- 📈 Investments & Portfolio\n- 📉 Reports & Analytics\n- 📈 Dashboard\n- ⚙️ User Settings\n- 🔔 Budget Alerts\n- 🔒 Security Events (Admin)\n- 📋 Audit History (Admin)\n- 🏥 Health Checks\n- 🔄 Idempotency Support\n\n## Setup\n1. Set `baseUrl` variable to your API URL (default: https://localhost:5001)\n2. Login using `/auth/login` endpoint\n3. Copy the access token to `bearerToken` variable\n4. Start testing!\n\n## Variables\n- `baseUrl`: API base URL\n- `bearerToken`: JWT access token\n- `accountId`, `categoryId`, `categoryTypeId`, `transactionId`, `budgetId`, `investmentId`: Created resource IDs",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "budgetbuddy"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{bearerToken}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://localhost:5001",
+			"type": "string"
+		},
+		{
+			"key": "bearerToken",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "accountId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "transactionId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "budgetId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "categoryId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "investmentId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "categoryTypeId",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "🔐 Authentication",
+			"item": [
+				{
+					"name": "Register",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!@#\",\n  \"confirmPassword\": \"Password123!@#\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/register",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "register"]
+						},
+						"description": "Register a new user account"
+					}
+				},
+				{
+					"name": "Login (Cookie Auth)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!@#\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login?useCookies=true",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"],
+							"query": [
+								{
+									"key": "useCookies",
+									"value": "true"
+								}
+							]
+						},
+						"description": "Login with cookie-based authentication (for web SPA)"
+					}
+				},
+				{
+					"name": "Login (Bearer Token)",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has access token', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('accessToken');",
+									"    pm.collectionVariables.set('bearerToken', jsonData.accessToken);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"Password123!@#\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/auth/login",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "login"]
+						},
+						"description": "Login with bearer token authentication (for mobile/API)\n\n**Auto-saves token to collection variable!**"
+					}
+				},
+				{
+					"name": "Get CSRF Token",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/csrf-token",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "csrf-token"]
+						},
+						"description": "Get CSRF token for cookie-based authentication"
+					}
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/auth/logout",
+							"host": ["{{baseUrl}}"],
+							"path": ["auth", "logout"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔐 Two-Factor Authentication",
+			"item": [
+				{
+					"name": "Get Two-Factor Status",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/twofactor/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "twofactor", "status"]
+						},
+						"description": "Check if 2FA is enabled for the current user"
+					}
+				},
+				{
+					"name": "Enable Two-Factor",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/twofactor/enable",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "twofactor", "enable"]
+						},
+						"description": "Generate QR code and shared key for TOTP authenticator app setup"
+					}
+				},
+				{
+					"name": "Verify Two-Factor Setup",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"123456\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/twofactor/verify",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "twofactor", "verify"]
+						},
+						"description": "Verify TOTP code from authenticator app and complete 2FA setup\n\n**Security:** Rate limited to 5 attempts per 15 minutes (brute force protection)"
+					}
+				},
+				{
+					"name": "Disable Two-Factor",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"password\": \"Test123!@#\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/twofactor/disable",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "twofactor", "disable"]
+						},
+						"description": "Disable 2FA for current user (requires password confirmation for security)"
+					}
+				},
+				{
+					"name": "Get Recovery Codes (Generate New)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/twofactor/recovery-codes?generateNew=true&batchNumber=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "twofactor", "recovery-codes"],
+							"query": [
+								{
+									"key": "generateNew",
+									"value": "true",
+									"description": "Generate new recovery codes (invalidates old ones)"
+								},
+								{
+									"key": "batchNumber",
+									"value": "1",
+									"description": "Batch number (1 or 2) - returns 5 codes per batch"
+								}
+							]
+						},
+						"description": "Generate 10 new recovery codes (returns first 5)\n\n**Security Features:**\n- Batched distribution (2 batches of 5 codes)\n- Codes hashed before storage\n- 15-minute cache expiration\n- Strict rate limiting\n- Single-use codes"
+					}
+				},
+				{
+					"name": "Get Recovery Codes (Batch 2)",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/twofactor/recovery-codes?batchNumber=2",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "twofactor", "recovery-codes"],
+							"query": [
+								{
+									"key": "batchNumber",
+									"value": "2",
+									"description": "Retrieve remaining 5 codes (batch 2)"
+								}
+							]
+						},
+						"description": "Retrieve remaining recovery codes from cache (batch 2 of 2)"
+					}
+				}
+			]
+		},
+		{
+			"name": "💰 Accounts",
+			"item": [
+				{
+					"name": "Create Account",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test('Response has ID', function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.have.property('id');",
+									"    pm.collectionVariables.set('accountId', jsonData.id);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Idempotency-Key",
+								"value": "{{$guid}}",
+								"description": "Prevents duplicate accounts on retry"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Savings Account\",\n  \"description\": \"My personal savings\",\n  \"defaultCurrencyCode\": \"USD\",\n  \"initialBalance\": 1000.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounts"]
+						}
+					}
+				},
+				{
+					"name": "Get All Accounts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounts"]
+						}
+					}
+				},
+				{
+					"name": "Get Account Balance",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts/{{accountId}}/balance",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounts", "{{accountId}}", "balance"]
+						}
+					}
+				},
+				{
+					"name": "Update Account",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Savings Account\",\n  \"description\": \"Updated description\",\n  \"defaultCurrencyCode\": \"EUR\",\n  \"initialBalance\": 1500.00\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts/{{accountId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounts", "{{accountId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Account",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/accounts/{{accountId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "accounts", "{{accountId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💸 Transactions",
+			"item": [
+				{
+					"name": "Create Transaction",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 201', function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set('transactionId', jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Idempotency-Key",
+								"value": "{{$guid}}",
+								"description": "IMPORTANT: Prevents duplicate transactions"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"typeId\": null,\n  \"amount\": 50.00,\n  \"currencyCode\": \"USD\",\n  \"refCurrencyAmount\": null,\n  \"transactionType\": \"Expense\",\n  \"paymentType\": \"Card\",\n  \"note\": \"Coffee at Starbucks\",\n  \"transactionDate\": \"2024-01-15\",\n  \"isTransfer\": false,\n  \"payee\": \"Starbucks\",\n  \"labels\": \"food,coffee\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "transactions"]
+						}
+					}
+				},
+				{
+					"name": "Get Transactions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions?pageNumber=1&pageSize=50&startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "transactions"],
+							"query": [
+								{
+									"key": "pageNumber",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "pageSize",
+									"value": "50",
+									"description": "Items per page (default: 50)"
+								},
+								{
+									"key": "startDate",
+									"value": "2024-01-01",
+									"description": "Filter by start date (ISO format)"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-12-31",
+									"description": "Filter by end date (ISO format)"
+								},
+								{
+									"key": "accountId",
+									"value": "{{accountId}}",
+									"description": "Filter by account ID",
+									"disabled": true
+								},
+								{
+									"key": "categoryId",
+									"value": "{{categoryId}}",
+									"description": "Filter by category ID",
+									"disabled": true
+								},
+								{
+									"key": "type",
+									"value": "Expense",
+									"description": "Filter by transaction type (Income, Expense, Transfer)",
+									"disabled": true
+								},
+								{
+									"key": "search",
+									"value": "coffee",
+									"description": "Search in Note, Payee, Labels",
+									"disabled": true
+								}
+							]
+						},
+						"description": "Get all transactions with pagination, filtering, and search\n\n**Response Fields (Cached):**\n- Excludes `Note` and `Payee` fields for PII security (personal data not cached)\n- Full transaction details available via individual GET /api/transactions/{id}\n\n**Query Limits:**\n- pageSize: 1-100 (default: 50)\n- searchTerm: Max 100 chars, alphanumeric only"
+					}
+				},
+				{
+					"name": "Update Transaction",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"amount\": 55.00,\n  \"currencyCode\": \"USD\",\n  \"transactionType\": \"Expense\",\n  \"paymentType\": \"Card\",\n  \"note\": \"Updated: Coffee + Muffin\",\n  \"transactionDate\": \"2024-01-15\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions/{{transactionId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "transactions", "{{transactionId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Transaction",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions/{{transactionId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "transactions", "{{transactionId}}"]
+						}
+					}
+				},
+				{
+					"name": "Batch Delete Transactions",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ids\": [\n    \"guid-1\",\n    \"guid-2\",\n    \"guid-3\"\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions/batch-delete",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "transactions", "batch-delete"]
+						}
+					}
+				},
+				{
+					"name": "Batch Update Transactions",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ids\": [\"guid-1\", \"guid-2\"],\n  \"categoryId\": \"{{categoryId}}\",\n  \"labels\": \"updated,batch\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions/batch-update",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "transactions", "batch-update"]
+						}
+					}
+				},
+				{
+					"name": "Export Transactions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions/export?format=xlsx&startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "transactions", "export"],
+							"query": [
+								{
+									"key": "format",
+									"value": "xlsx"
+								},
+								{
+									"key": "startDate",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-12-31"
+								}
+							]
+						},
+						"description": "Download transactions as Excel file"
+					}
+				},
+				{
+					"name": "Import Transactions",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/path/to/transactions.xlsx"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/transactions/import",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "transactions", "import"]
+						},
+						"description": "Import transactions from Excel file\n\n**Supported formats:** .xlsx, .xls  \n**Max file size:** 10 MB\n**Max rows:** 10,000 (DoS protection)\n\n**Performance (v2026-03-19):**\n- Uses BulkInsertAsync for 10x faster imports\n- 10,000 rows: ~1-2 seconds (previously 10-15 seconds)\n- Atomic transaction: All-or-nothing import"
+					}
+				}
+			]
+		},
+		{
+			"name": "🔄 Transfers",
+			"item": [
+				{
+					"name": "Create Transfer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Idempotency-Key",
+								"value": "{{$guid}}",
+								"description": "CRITICAL: Prevents duplicate transfers!"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fromAccountId\": \"guid-from-account\",\n  \"toAccountId\": \"guid-to-account\",\n  \"amount\": 100.00,\n  \"currencyCode\": \"USD\",\n  \"paymentType\": \"BankTransfer\",\n  \"note\": \"Transfer to savings\",\n  \"transferDate\": \"2024-01-15\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/transfers",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "transfers"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💼 Budgets",
+			"item": [
+				{
+					"name": "Create Budget",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set('budgetId', jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Idempotency-Key",
+								"value": "{{$guid}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Monthly Food Budget\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"amount\": 500.00,\n  \"currencyCode\": \"USD\",\n  \"year\": 2024,\n  \"month\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/budgets",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "budgets"]
+						}
+					}
+				},
+				{
+					"name": "Get Budgets",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/budgets?year=2024&month=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "budgets"],
+							"query": [
+								{
+									"key": "year",
+									"value": "2024"
+								},
+								{
+									"key": "month",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Budget vs Actual",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/budgets/vs-actual?year=2024&month=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "budgets", "vs-actual"],
+							"query": [
+								{
+									"key": "year",
+									"value": "2024"
+								},
+								{
+									"key": "month",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Budget",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Food Budget\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"amount\": 600.00,\n  \"currencyCode\": \"USD\",\n  \"year\": 2024,\n  \"month\": 1\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/budgets/{{budgetId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "budgets", "{{budgetId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Budget",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/budgets/{{budgetId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "budgets", "{{budgetId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏷️ Categories",
+			"item": [
+				{
+					"name": "Create Category",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set('categoryId', jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Food & Dining\",\n  \"icon\": \"🍔\",\n  \"color\": \"#FF5722\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/categories",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "categories"]
+						}
+					}
+				},
+				{
+					"name": "Get Categories",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/categories",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "categories"]
+						}
+					}
+				},
+				{
+					"name": "Update Category",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Food & Drinks\",\n  \"icon\": \"🍕\",\n  \"color\": \"#FF5722\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "categories", "{{categoryId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Category",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "categories", "{{categoryId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🏷️ Category Types",
+			"item": [
+				{
+					"name": "Create Category Type",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set('categoryTypeId', jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Subscription\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"description\": \"Recurring monthly subscriptions\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/category-types",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "category-types"]
+						}
+					}
+				},
+				{
+					"name": "Get Category Types",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/category-types?page=1&pageSize=50",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "category-types"],
+							"query": [
+								{
+									"key": "categoryId",
+									"value": "{{categoryId}}",
+									"description": "Filter by category ID",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "pageSize",
+									"value": "50",
+									"description": "Items per page (default: 50)"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Category Type",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"name\": \"Updated Subscription\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"description\": \"Updated description\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/category-types/{{categoryTypeId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "category-types", "{{categoryTypeId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Category Type",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/category-types/{{categoryTypeId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "category-types", "{{categoryTypeId}}"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "💱 Currencies",
+			"item": [
+				{
+					"name": "Create Currency",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"USD\",\n  \"name\": \"US Dollar\",\n  \"symbol\": \"$\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/currencies",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "currencies"]
+						}
+					}
+				},
+				{
+					"name": "Get Currencies",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/currencies",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "currencies"]
+						}
+					}
+				},
+				{
+					"name": "Update Currency",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"code\": \"USD\",\n  \"name\": \"United States Dollar\",\n  \"symbol\": \"$\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/currencies/USD",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "currencies", "USD"]
+						}
+					}
+				},
+				{
+					"name": "Delete Currency",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/currencies/USD",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "currencies", "USD"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📈 Investments",
+			"item": [
+				{
+					"name": "Create Investment",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"pm.collectionVariables.set('investmentId', jsonData.id);"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Idempotency-Key",
+								"value": "{{$guid}}",
+								"description": "Prevents duplicate purchases"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"symbol\": \"AAPL\",\n  \"name\": \"Apple Inc.\",\n  \"type\": \"Stock\",\n  \"quantity\": 10,\n  \"purchasePrice\": 150.00,\n  \"currencyCode\": \"USD\",\n  \"purchaseDate\": \"2024-01-15\",\n  \"note\": \"Long-term hold\",\n  \"accountId\": \"{{accountId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/investments",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "investments"]
+						}
+					}
+				},
+				{
+					"name": "Get Investments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/investments?type=Stock&pageNumber=1&pageSize=50",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "investments"],
+							"query": [
+								{
+									"key": "type",
+									"value": "Stock",
+									"description": "Filter by investment type (Crypto, ETF, Stock)"
+								},
+								{
+									"key": "search",
+									"value": "bitcoin",
+									"description": "Search in Symbol, Name, Note",
+									"disabled": true
+								},
+								{
+									"key": "pageNumber",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "pageSize",
+									"value": "50",
+									"description": "Items per page (default: 50)"
+								}
+							]
+						},
+						"description": "Get all investments with pagination, filtering by type, and search\n\n**Query Limits:**\n- pageSize: 1-100 (default: 50)\n- searchTerm: Max 100 chars, alphanumeric only"
+					}
+				},
+				{
+					"name": "Get Portfolio Value",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/investments/portfolio-value?currency=USD",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "investments", "portfolio-value"],
+							"query": [
+								{
+									"key": "currency",
+									"value": "USD"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Update Investment",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"symbol\": \"AAPL\",\n  \"name\": \"Apple Inc.\",\n  \"type\": \"Stock\",\n  \"quantity\": 15,\n  \"purchasePrice\": 155.00,\n  \"currencyCode\": \"USD\",\n  \"purchaseDate\": \"2024-01-15\",\n  \"note\": \"Added more shares\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/investments/{{investmentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "investments", "{{investmentId}}"]
+						}
+					}
+				},
+				{
+					"name": "Delete Investment",
+					"request": {
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/investments/{{investmentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "investments", "{{investmentId}}"]
+						}
+					}
+				},
+				{
+					"name": "Batch Delete Investments",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"ids\": [\n    \"guid-1\",\n    \"guid-2\"\n  ]\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/investments/batch-delete",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "investments", "batch-delete"]
+						}
+					}
+				},
+				{
+					"name": "Export Investments",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/investments/export?format=xlsx",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "investments", "export"],
+							"query": [
+								{
+									"key": "format",
+									"value": "xlsx"
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📊 Reports",
+			"item": [
+				{
+					"name": "Get Income vs Expense",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/income-vs-expense?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "income-vs-expense"],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-12-31"
+								},
+								{
+									"key": "accountId",
+									"value": "{{accountId}}",
+									"disabled": true
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Spending by Category",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/spending-by-category?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "spending-by-category"],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-12-31"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Monthly Summary",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/monthly-summary?year=2024&month=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "monthly-summary"],
+							"query": [
+								{
+									"key": "year",
+									"value": "2024"
+								},
+								{
+									"key": "month",
+									"value": "1"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Investment Performance",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/investment-performance?startDate=2024-01-01&endDate=2024-12-31",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "investment-performance"],
+							"query": [
+								{
+									"key": "startDate",
+									"value": "2024-01-01"
+								},
+								{
+									"key": "endDate",
+									"value": "2024-12-31"
+								},
+								{
+									"key": "type",
+									"value": "Stock",
+									"disabled": true
+								}
+							]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "📈 Dashboard",
+			"item": [
+				{
+					"name": "Get Dashboard",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/dashboard",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "dashboard"]
+						},
+						"description": "Get aggregated dashboard data including:\n- Total balance across accounts\n- Recent transactions (excludes Note/Payee for PII security)\n- Budget overview\n- Spending summary\n\n**Cache:** 5 minutes TTL (optimized for fresh financial data)\n**Security:** Recent transactions exclude PII fields when cached"
+					}
+				}
+			]
+		},
+		{
+			"name": "⚙️ User Settings",
+			"item": [
+				{
+					"name": "Get User Settings",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/user-settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "user-settings"]
+						}
+					}
+				},
+				{
+					"name": "Update User Settings",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"preferredLanguage\": \"en-US\",\n  \"defaultCurrency\": \"USD\",\n  \"dateFormat\": \"yyyy-MM-dd\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/user-settings",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "user-settings"]
+						}
+					}
+				}
+			]
+		},
+		{
+			"name": "🔔 Budget Alerts",
+			"item": [
+				{
+					"name": "Get Budget Alerts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/budget-alerts?year=2024&month=1",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "budget-alerts"],
+							"query": [
+								{
+									"key": "year",
+									"value": "2024"
+								},
+								{
+									"key": "month",
+									"value": "1"
+								}
+							]
+						},
+						"description": "Get budget alerts for budgets that are close to or over limit\n\n**Query Validation:**\n- year: 1900-2100 (optional, defaults to current year)\n- month: 1-12 (optional, defaults to current month)"
+					}
+				}
+			]
+		},
+		{
+			"name": "🔒 Security (Admin Only)",
+			"item": [
+				{
+					"name": "Get Security Events",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/security/events?pageSize=50&minSeverity=Info",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "security", "events"],
+							"query": [
+								{
+									"key": "pageSize",
+									"value": "50",
+									"description": "Number of events to retrieve (default: 50, max: 200)"
+								},
+								{
+									"key": "minSeverity",
+									"value": "Info",
+									"description": "Minimum severity level: Info, Warning, High, Critical"
+								}
+							]
+						},
+						"description": "Get recent security events for monitoring\n\n**Admin Only** - Requires admin role\n\n**Event Types:**\n- Login success/failure\n- Logout\n- Registration\n- 2FA enable/disable/verify\n- Brute force detection\n\n**Severity Levels:**\n- Info: Normal operations\n- Warning: Unusual activity\n- High: Failed login attempts\n- Critical: Brute force attacks, security violations"
+					}
+				},
+				{
+					"name": "Get Security Events (High Severity Only)",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/security/events?pageSize=50&minSeverity=High",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "security", "events"],
+							"query": [
+								{
+									"key": "pageSize",
+									"value": "50"
+								},
+								{
+									"key": "minSeverity",
+									"value": "High",
+									"description": "Filter: High or Critical events only"
+								}
+							]
+						}
+					}
+				},
+				{
+					"name": "Get Security Alerts",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/security/alerts",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "security", "alerts"]
+						},
+						"description": "Get active security alerts (unreviewed high/critical severity events)\n\n**Admin Only** - Requires admin role\n\n**Returns:**\n- Unreviewed High and Critical severity events\n- Brute force attacks\n- Failed 2FA attempts\n- Suspicious login patterns"
+					}
+				}
+			]
+		},
+		{
+			"name": "📋 Audit History (Admin Only)",
+			"item": [
+				{
+					"name": "Get Audit History - Account",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit/Account/{{accountId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "audit", "Account", "{{accountId}}"]
+						},
+						"description": "Get complete audit history for a specific account\n\n**Admin Only** - Requires admin role\n\n**Returns:**\n- All Create, Update, Delete events\n- Who made the change\n- When it was changed\n- What was changed (old vs new values)\n- IP address and user agent"
+					}
+				},
+				{
+					"name": "Get Audit History - Transaction",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit/Transaction/{{transactionId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "audit", "Transaction", "{{transactionId}}"]
+						},
+						"description": "Get complete audit history for a specific transaction"
+					}
+				},
+				{
+					"name": "Get Audit History - Budget",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit/Budget/{{budgetId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "audit", "Budget", "{{budgetId}}"]
+						},
+						"description": "Get complete audit history for a specific budget"
+					}
+				},
+				{
+					"name": "Get Audit History - Investment",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/audit/Investment/{{investmentId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "audit", "Investment", "{{investmentId}}"]
+						},
+						"description": "Get complete audit history for a specific investment"
+					}
+				}
+			]
+		},
+		{
+			"name": "🏥 Health",
+			"item": [
+				{
+					"name": "Health Check",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health",
+							"host": ["{{baseUrl}}"],
+							"path": ["health"]
+						}
+					}
+				},
+				{
+					"name": "Health Check (Ready)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health/ready",
+							"host": ["{{baseUrl}}"],
+							"path": ["health", "ready"]
+						}
+					}
+				},
+				{
+					"name": "Health Check (Live)",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/health/live",
+							"host": ["{{baseUrl}}"],
+							"path": ["health", "live"]
+						}
+					}
+				}
+			]
+		}
+	]
+}

@@ -1,0 +1,86 @@
+groups:
+  - name: budgetbuddy.api
+    interval: 30s
+    rules:
+      # API down
+      - alert: ApiDown
+        expr: up{job="budgetbuddy-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "BudgetBuddy API is down"
+          description: "Instance {{ $labels.instance }} has been unreachable for more than 1 minute."
+
+      # High error rate
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_server_request_duration_seconds_count{job="budgetbuddy-api", http_response_status_code=~"5.."}[5m]))
+          /
+          sum(rate(http_server_request_duration_seconds_count{job="budgetbuddy-api"}[5m]))
+          > 0.05
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High 5xx error rate on BudgetBuddy API"
+          description: "5xx error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
+
+      # High P95 latency
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_request_duration_seconds_bucket{job="budgetbuddy-api"}[5m])) by (le)
+          ) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High P95 latency on BudgetBuddy API"
+          description: "P95 latency is {{ $value | humanizeDuration }} (threshold: 1s)."
+
+      # Very high P95 latency
+      - alert: CriticalLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum(rate(http_server_request_duration_seconds_bucket{job="budgetbuddy-api"}[5m])) by (le)
+          ) > 3.0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Critical P95 latency on BudgetBuddy API"
+          description: "P95 latency is {{ $value | humanizeDuration }} (threshold: 3s)."
+
+      # GC pressure (frequent Gen 2 collections)
+      - alert: HighGcPressure
+        expr: |
+          rate(dotnet_gc_collections_total{job="budgetbuddy-api", generation="gen2"}[5m]) * 60 > 5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High GC Gen2 pressure"
+          description: "Gen2 collections: {{ $value | humanize }}/min (threshold: 5/min)."
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: |
+          process_working_set_bytes{job="budgetbuddy-api"} > 512 * 1024 * 1024
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "BudgetBuddy API high memory usage"
+          description: "Working set: {{ $value | humanize1024 }}B (threshold: 512 MiB)."
+
+      # Thread pool starvation
+      - alert: ThreadPoolQueueBuildup
+        expr: |
+          dotnet_thread_pool_queue_length{job="budgetbuddy-api"} > 100
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Thread pool queue buildup"
+          description: "Thread pool queue length: {{ $value }} (threshold: 100)."
