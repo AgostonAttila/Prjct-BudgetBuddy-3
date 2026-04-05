@@ -1,10 +1,3 @@
-using BudgetBuddy.API.VSA.Common.Infrastructure.Persistence.Extensions;
-using BudgetBuddy.API.VSA.Common.Infrastructure.Security.Authentication;
-using BudgetBuddy.API.VSA.Features.BudgetAlerts.Jobs;
-using BudgetBuddy.API.VSA.Features.MarketData.Jobs;
-using BudgetBuddy.API.VSA.Features.MarketData.Services;
-using Serilog;
-
 // Bootstrap logger - minimal configuration for startup errors only
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
@@ -12,7 +5,7 @@ Log.Logger = new LoggerConfiguration()
     .CreateBootstrapLogger();
 
 
-// Build the application outside of try-catch so that WebApplicationFactory
+// Build the application outside try-catch so that WebApplicationFactory
 // (integration tests) can intercept startup exceptions properly.
 // If the build itself throws, it must propagate — otherwise WebApplicationFactory
 // sees "entry point exited without building IHost" and hides the real error.
@@ -44,12 +37,7 @@ var app = builder.Build();
 // including WebApplicationFactory test overrides (ConfigureAppConfiguration).
 // Both JWT and connection string validation must run here — NOT during service registration —
 // because test config overrides only land after Build().
-ApiExtensions.ValidateConfigurations(app.Configuration);
-
-var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
-    ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
-    ?? "Production";
-JwtConfigurationValidator.ValidateSecretKey(app.Configuration["Jwt:SecretKey"], environment);
+ValidateJWTSecret(app);
 
 // Configure middleware pipeline
 app.UseMiddlewarePipeline();
@@ -69,20 +57,7 @@ try
     // Backfill historical market data in the background (non-blocking).
     // Detects gaps from the earliest investment/transaction date and fills them via
     // Frankfurter (FX) and Alpha Vantage (prices). Safe to run on every startup.
-    _ = Task.Run(async () =>
-    {
-        await using var scope = app.Services.CreateAsyncScope();
-        var backfill = scope.ServiceProvider.GetRequiredService<IMarketDataBackfillService>();
-        var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-        try
-        {
-            await backfill.BackfillAllMissingAsync();
-        }
-        catch (Exception ex)
-        {
-            startupLogger.LogError(ex, "Startup market data backfill failed");
-        }
-    });
+    BackFillMarketDataAsync(app);
 
     // Seed database with sample data (only in Development)
     if (app.Environment.IsDevelopment() && args.Contains("--seed"))
@@ -100,6 +75,36 @@ catch (Exception ex)
 finally
 {
     Log.CloseAndFlush();
+}
+
+return;
+
+void ValidateJWTSecret(WebApplication webApplication)
+{
+    ApiExtensions.ValidateConfigurations(webApplication.Configuration);
+
+    var environment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")
+                      ?? Environment.GetEnvironmentVariable("DOTNET_ENVIRONMENT")
+                      ?? "Production";
+    JwtConfigurationValidator.ValidateSecretKey(webApplication.Configuration["Jwt:SecretKey"], environment);
+}
+
+void BackFillMarketDataAsync(WebApplication app1)
+{
+    _ = Task.Run(async () =>
+    {
+        await using var scope = app1.Services.CreateAsyncScope();
+        var backfill = scope.ServiceProvider.GetRequiredService<IMarketDataBackfillService>();
+        var startupLogger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        try
+        {
+            await backfill.BackfillAllMissingAsync();
+        }
+        catch (Exception ex)
+        {
+            startupLogger.LogError(ex, "Startup market data backfill failed");
+        }
+    });
 }
 
 // Required for WebApplicationFactory<Program> in integration tests

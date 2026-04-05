@@ -31,6 +31,7 @@ public class ReportService(
 
         var query = context.Transactions.FilterByUser(userId, startDate, endDate, accountId);
 
+        //TODO save at user if need speed up - or at least cache
         var groupedByCurrency = await query
             .AsNoTracking()
             .Where(t => t.CurrencyCode != null) 
