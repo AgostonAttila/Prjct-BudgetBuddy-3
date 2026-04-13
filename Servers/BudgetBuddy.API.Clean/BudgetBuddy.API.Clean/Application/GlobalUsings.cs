@@ -1,0 +1,14 @@
+﻿global using MediatR;
+global using FluentValidation;
+global using Microsoft.Extensions.Logging;
+global using NodaTime;
+global using BudgetBuddy.Domain.Entities;
+global using BudgetBuddy.Domain.Enums;
+global using BudgetBuddy.Domain.Contracts;
+global using BudgetBuddy.Domain.Constants;
+global using BudgetBuddy.Domain.Exceptions;
+global using BudgetBuddy.Application.Common.Contracts;
+global using BudgetBuddy.Application.Common.Models;
+global using MapsterMapper;
+global using BudgetBuddy.Application.Common.Constants;
+global using Tags = BudgetBuddy.Application.Common.Constants.CacheTags;

@@ -1,0 +1,17 @@
+global using Microsoft.AspNetCore.Builder;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Configuration;
+global using BudgetBuddy.Application.Common.Contracts;
+global using BudgetBuddy.Application.Common.Models;
+global using Carter;
+global using MediatR;
+global using NodaTime;
+global using BudgetBuddy.Domain.Entities;
+global using BudgetBuddy.Domain.Enums;
+global using BudgetBuddy.Domain.Contracts;
+global using BudgetBuddy.Domain.Exceptions;
+global using Microsoft.AspNetCore.Http;
+global using Microsoft.Extensions.Logging;
+global using BudgetBuddy.API.Extensions;
+global using BudgetBuddy.API.Extensions.EndpointExtensions;
+global using BudgetBuddy.Domain.Constants;

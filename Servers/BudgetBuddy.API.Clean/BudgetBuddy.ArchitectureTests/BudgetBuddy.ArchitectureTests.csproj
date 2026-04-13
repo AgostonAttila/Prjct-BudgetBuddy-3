@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="TngTech.ArchUnitNET.xUnit" Version="0.13.3" />
+    <PackageReference Include="xunit" Version="2.9.0" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\BudgetBuddy.API.Clean\Domain\Domain.csproj" />
+    <ProjectReference Include="..\BudgetBuddy.API.Clean\Application\Application.csproj" />
+    <ProjectReference Include="..\BudgetBuddy.API.Clean\Infrastructure\Infrastructure.csproj" />
+    <ProjectReference Include="..\BudgetBuddy.API.Clean\API\API.csproj" />
+  </ItemGroup>
+</Project>
