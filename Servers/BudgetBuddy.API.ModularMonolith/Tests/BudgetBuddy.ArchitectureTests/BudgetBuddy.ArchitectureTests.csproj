@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="6.12.2" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NetArchTest.Rules" Version="1.3.2" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Modules -->
+    <ProjectReference Include="../../Modules/BudgetBuddy.Module.Accounts/BudgetBuddy.Module.Accounts.csproj" />
+    <ProjectReference Include="../../Modules/BudgetBuddy.Module.Analytics/BudgetBuddy.Module.Analytics.csproj" />
+    <ProjectReference Include="../../Modules/BudgetBuddy.Module.Auth/BudgetBuddy.Module.Auth.csproj" />
+    <ProjectReference Include="../../Modules/BudgetBuddy.Module.Budgets/BudgetBuddy.Module.Budgets.csproj" />
+    <ProjectReference Include="../../Modules/BudgetBuddy.Module.Investments/BudgetBuddy.Module.Investments.csproj" />
+    <ProjectReference Include="../../Modules/BudgetBuddy.Module.ReferenceData/BudgetBuddy.Module.ReferenceData.csproj" />
+    <ProjectReference Include="../../Modules/BudgetBuddy.Module.Transactions/BudgetBuddy.Module.Transactions.csproj" />
+    <!-- Shared -->
+    <ProjectReference Include="../../Shared/BudgetBuddy.Shared.Contracts/BudgetBuddy.Shared.Contracts.csproj" />
+    <ProjectReference Include="../../Shared/BudgetBuddy.Shared.Infrastructure/BudgetBuddy.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="../../Shared/BudgetBuddy.Shared.Kernel/BudgetBuddy.Shared.Kernel.csproj" />
+  </ItemGroup>
+
+</Project>
