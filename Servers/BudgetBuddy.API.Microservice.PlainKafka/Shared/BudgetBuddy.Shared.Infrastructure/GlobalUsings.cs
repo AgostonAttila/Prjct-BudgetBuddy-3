@@ -1,0 +1,17 @@
+global using BudgetBuddy.Shared.Infrastructure;
+global using BudgetBuddy.Shared.Infrastructure.Persistence;
+global using BudgetBuddy.Shared.Infrastructure.Persistence.Outbox;
+global using BudgetBuddy.Shared.Kernel.Constants;
+global using BudgetBuddy.Shared.Kernel.Contracts;
+global using BudgetBuddy.Shared.Kernel.Enums;
+global using BudgetBuddy.Shared.Kernel.Exceptions;
+global using BudgetBuddy.Shared.Kernel.Logging;
+global using BudgetBuddy.Shared.Messages.Contracts;
+global using BudgetBuddy.Shared.Messages.Contracts.Accounts;
+global using BudgetBuddy.Shared.Messages.Contracts.Financial;
+global using BudgetBuddy.Shared.Messages.Contracts.Investments;
+global using BudgetBuddy.Shared.Messages.Integration;
+global using BudgetBuddy.Shared.Messages.Topics;
+global using MediatR;
+global using Microsoft.EntityFrameworkCore;
+global using NodaTime;

@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>BudgetBuddy.Shared.Messages</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Shared/BudgetBuddy.Shared.Kernel/BudgetBuddy.Shared.Kernel.csproj" />
+    <PackageReference Include="Confluent.Kafka" />
+    <PackageReference Include="NodaTime" />
+  </ItemGroup>
+</Project>

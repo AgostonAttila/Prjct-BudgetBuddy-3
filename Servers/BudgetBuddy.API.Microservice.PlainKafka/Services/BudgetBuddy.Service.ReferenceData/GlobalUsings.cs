@@ -1,0 +1,27 @@
+global using BudgetBuddy.Service.ReferenceData.Domain;
+global using BudgetBuddy.Service.ReferenceData.Persistence;
+global using BudgetBuddy.Shared.Infrastructure;
+global using BudgetBuddy.Shared.Infrastructure.Extensions;
+global using BudgetBuddy.Shared.Infrastructure.Persistence; 
+global using BudgetBuddy.Shared.Kernel.Constants;
+global using BudgetBuddy.Shared.Kernel.Contracts;
+global using BudgetBuddy.Shared.Kernel.Enums;
+global using BudgetBuddy.Shared.Kernel.Exceptions;
+global using BudgetBuddy.Shared.Messages.Contracts;
+global using BudgetBuddy.Shared.Messages.Contracts.Accounts;
+global using BudgetBuddy.Shared.Messages.Contracts.Investments;
+global using BudgetBuddy.Shared.Messages.Contracts.ReferenceData;
+global using Carter;
+global using MapsterMapper;
+global using MediatR;
+global using Microsoft.AspNetCore.Builder;
+global using Microsoft.AspNetCore.Http;
+global using Microsoft.AspNetCore.Http.HttpResults;
+global using Microsoft.AspNetCore.Routing;
+global using Microsoft.EntityFrameworkCore;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Logging;
+global using NodaTime;
+global using Tags = BudgetBuddy.Shared.Kernel.Constants.CacheTags;
+

@@ -1,0 +1,11 @@
+service:
+  name: budgetbuddy-transactions
+image:
+  repository: budgetbuddy/transactions
+secretName: budgetbuddy-transactions-secret
+config:
+  ASPNETCORE_ENVIRONMENT: Production
+  OpenTelemetry__OtlpEndpoint: "http://otel-collector:4317"
+  Seq__ServerUrl: "http://seq:5341"
+  ClamAV__ServerUrl: "clamav"
+  ClamAV__Port: "3310"

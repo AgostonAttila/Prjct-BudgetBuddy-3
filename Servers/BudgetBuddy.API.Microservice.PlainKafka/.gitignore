@@ -1,0 +1,14 @@
+# Secrets — never commit
+.env
+
+# User-specific files
+*.user
+*.suo
+.vs/
+
+# Build outputs
+**/bin/
+**/obj/
+
+# Rider / JetBrains
+.idea/

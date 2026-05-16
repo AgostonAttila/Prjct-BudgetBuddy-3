@@ -1,0 +1,73 @@
+# Default values for a single BudgetBuddy service deployment.
+# Override per service: helm install transactions . -f values-transactions.yaml
+
+# -- Name of the service (used in labels, selectors, and resource names)
+service:
+  name: budgetbuddy-service
+  port: 8080
+  targetPort: 8080
+
+# -- Container image
+image:
+  repository: budgetbuddy
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# -- Number of pod replicas
+replicaCount: 2
+
+# -- Resource requests and limits
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# -- Horizontal Pod Autoscaler
+autoscaling:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 70
+
+# -- Environment variables injected from a Secret (created separately via kubectl/Vault)
+# Keys: ConnectionStrings__DefaultConnection, ConnectionStrings__Redis,
+#       Keycloak__Authority, Kafka__SaslPassword, etc.
+secretName: ""
+
+# -- Non-sensitive configuration overrides (injected as env vars from ConfigMap)
+config:
+  ASPNETCORE_ENVIRONMENT: Production
+  OpenTelemetry__OtlpEndpoint: "http://otel-collector:4317"
+  Seq__ServerUrl: "http://seq:5341"
+  ClamAV__ServerUrl: "clamav"
+  ClamAV__Port: "3310"
+
+# -- Liveness / readiness / startup probes
+probes:
+  liveness:
+    path: /health/live
+    initialDelaySeconds: 10
+    periodSeconds: 15
+    failureThreshold: 3
+  readiness:
+    path: /health/ready
+    initialDelaySeconds: 15
+    periodSeconds: 10
+    failureThreshold: 3
+  startup:
+    path: /health/live
+    failureThreshold: 30
+    periodSeconds: 5
+
+# -- Pod disruption budget (keeps at least 1 pod available during rolling updates)
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# -- Node selector, tolerations, affinity
+nodeSelector: {}
+tolerations: []
+affinity: {}

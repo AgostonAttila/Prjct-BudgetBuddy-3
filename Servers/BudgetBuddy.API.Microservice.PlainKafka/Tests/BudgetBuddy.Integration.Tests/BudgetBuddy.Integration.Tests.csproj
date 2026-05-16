@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="Testcontainers.Kafka" />
+    <PackageReference Include="Testcontainers.PostgreSql" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <PackageReference Include="AutoFixture" />
+    <PackageReference Include="AutoFixture.AutoNSubstitute" />
+    <PackageReference Include="WireMock.Net" />
+    <PackageReference Include="System.Linq.Dynamic.Core" />
+    <PackageReference Include="Respawn" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Shared/BudgetBuddy.Shared.Kernel/BudgetBuddy.Shared.Kernel.csproj" />
+    <ProjectReference Include="../../Shared/BudgetBuddy.Shared.Messages/BudgetBuddy.Shared.Messages.csproj" />
+    <ProjectReference Include="../../Shared/BudgetBuddy.Shared.Infrastructure/BudgetBuddy.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="../../Services/BudgetBuddy.Service.Analytics/BudgetBuddy.Service.Analytics.csproj" />
+    <ProjectReference Include="../../Services/BudgetBuddy.Service.Transactions/BudgetBuddy.Service.Transactions.csproj" />
+    <ProjectReference Include="../../Services/BudgetBuddy.Service.Investments/BudgetBuddy.Service.Investments.csproj" />
+  </ItemGroup>
+</Project>
