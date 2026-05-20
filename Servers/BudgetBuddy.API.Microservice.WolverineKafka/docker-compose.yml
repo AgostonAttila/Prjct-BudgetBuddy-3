@@ -1,0 +1,550 @@
+name: budgetbuddy-wolverine
+
+services:
+
+  # ── Auth ─────────────────────────────────────────────────────────────────────
+
+  keycloak-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
+    volumes:
+      - keycloak-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  keycloak:
+    build:
+      context: Infrastructure/keycloak
+      dockerfile: Dockerfile
+    command: start-dev --import-realm
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:-keycloak}
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+    volumes:
+      - ./Infrastructure/keycloak:/opt/keycloak/data/import
+    ports:
+      - "8080:8080"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:9000/health/ready || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+
+  # ── Kafka (KRaft — no Zookeeper) ─────────────────────────────────────────────
+
+  kafka:
+    image: confluentinc/cp-kafka:7.9.0
+    hostname: kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://kafka:9092,CONTROLLER://kafka:9093,PLAINTEXT_HOST://0.0.0.0:29092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,PLAINTEXT_HOST://localhost:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      CLUSTER_ID: budgetbuddy-kafka-cluster-1
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    ports:
+      - "29092:29092"
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server kafka:9092 --list"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+
+  kafka-init:
+    image: confluentinc/cp-kafka:7.9.0
+    depends_on:
+      kafka:
+        condition: service_healthy
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists \
+          --topic budgetbuddy.accounts.changelog --partitions 3 --replication-factor 1 \
+          --config cleanup.policy=compact --config min.cleanable.dirty.ratio=0.1 --config segment.ms=10000
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.accounts.created --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.accounts.updated --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.accounts.deleted --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.transactions.created --partitions 6 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.transactions.updated --partitions 6 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.transactions.deleted --partitions 6 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.budgets.created --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.budgets.updated --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.budgets.deleted --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.budgets.alert-triggered --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.investments.created --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.investments.updated --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.investments.deleted --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.investments.price-updated --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.referencedata.currency-synced --partitions 1 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.referencedata.category-changed --partitions 1 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.users.registered --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.users.deleted --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.accounts.balance-reserved --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.transactions.reversed --partitions 3 --replication-factor 1
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.transactions.dlq --partitions 1 --replication-factor 1 --config retention.ms=604800000
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.accounts.dlq --partitions 1 --replication-factor 1 --config retention.ms=604800000
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.budgets.dlq --partitions 1 --replication-factor 1 --config retention.ms=604800000
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.investments.dlq --partitions 1 --replication-factor 1 --config retention.ms=604800000
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.referencedata.dlq --partitions 1 --replication-factor 1 --config retention.ms=604800000
+        kafka-topics --bootstrap-server kafka:9092 --create --if-not-exists --topic budgetbuddy.users.dlq --partitions 1 --replication-factor 1 --config retention.ms=604800000
+        echo "All Kafka topics created (including DLQs)"
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: budgetbuddy
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  # ── ClamAV Antivirus ──────────────────────────────────────────────────────────
+  # Items 6+14: ClamAV daemon + persistent virus-definition volume
+  # .NET code connects via nClam on port 3310 (ClamAV:ServerUrl / ClamAV:Port config keys)
+
+  clamav:
+    image: clamav/clamav:stable
+    ports:
+      - "3310:3310"
+    environment:
+      CLAMAV_NO_FRESHCLAM: "false"    # run freshclam on startup to update definitions
+    volumes:
+      - clamav-db:/var/lib/clamav    # Item 14: persistent virus-definition database
+    healthcheck:
+      test: ["CMD-SHELL", "clamdscan --ping 3 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 90s              # freshclam download takes a while on first start
+
+  # ── Shared Infrastructure ─────────────────────────────────────────────────────
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --save 60 1 --loglevel warning
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  seq:
+    image: datalust/seq:latest
+    environment:
+      ACCEPT_EULA: "Y"
+      SEQ_FIRSTRUN_ADMINPASSWORD: ${SEQ_ADMIN_PASSWORD:-admin123}
+    ports:
+      - "5341:5341"
+      - "8085:80"
+    volumes:
+      - seq-data:/data
+
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - ./Infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./Infrastructure/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./Infrastructure/grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"     # OTLP gRPC
+      - "4318:4318"     # OTLP HTTP
+
+  # ── Service Databases ─────────────────────────────────────────────────────────
+
+  accounts-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: accounts
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - accounts-db-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  transactions-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: transactions
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - transactions-db-data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  budgets-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: budgets
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - budgets-db-data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  investments-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: investments
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - investments-db-data:/var/lib/postgresql/data
+    ports:
+      - "5437:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  analytics-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: analytics
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - analytics-db-data:/var/lib/postgresql/data
+    ports:
+      - "5438:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  referencedata-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: referencedata
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - referencedata-db-data:/var/lib/postgresql/data
+    ports:
+      - "5439:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  notifications-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notifications
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - notifications-db-data:/var/lib/postgresql/data
+    ports:
+      - "5440:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ── Application Services ──────────────────────────────────────────────────────
+
+  wlv-api-gateway:
+    hostname: api-gateway
+    build:
+      context: .
+      dockerfile: Gateway/BudgetBuddy.Gateway/Dockerfile
+    ports:
+      - "5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Keycloak__Authority: http://keycloak:8080/realms/budgetbuddy
+      Keycloak__MetadataAddress: http://keycloak:8080/realms/budgetbuddy/.well-known/openid-configuration
+      OpenTelemetry__OtlpEndpoint: http://jaeger:4317
+      Seq__ServerUrl: http://seq:5341
+    depends_on:
+      keycloak:
+        condition: service_healthy
+
+  wlv-accounts-service:
+    hostname: accounts-service
+    build:
+      context: .
+      dockerfile: Services/BudgetBuddy.Service.Accounts/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=accounts-db;Port=5432;Database=accounts;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}"
+      ConnectionStrings__Redis: "redis:6379"
+      Keycloak__Authority: http://keycloak:8080/realms/budgetbuddy
+      Keycloak__MetadataAddress: http://keycloak:8080/realms/budgetbuddy/.well-known/openid-configuration
+      Kafka__BootstrapServers: kafka:9092
+      OpenTelemetry__OtlpEndpoint: http://jaeger:4317
+      Seq__ServerUrl: http://seq:5341
+      ClamAV__ServerUrl: clamav             # Item 6: ClamAV antivirus
+      ClamAV__Port: 3310
+      ServiceAuth__InternalApiKey: ${INTERNAL_API_KEY:-dev-internal-key-change-in-prod}  # Item 11
+    depends_on:
+      accounts-db:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+
+  wlv-transactions-service:
+    hostname: transactions-service
+    build:
+      context: .
+      dockerfile: Services/BudgetBuddy.Service.Transactions/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=transactions-db;Port=5432;Database=transactions;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}"
+      ConnectionStrings__Redis: "redis:6379"
+      Keycloak__Authority: http://keycloak:8080/realms/budgetbuddy
+      Keycloak__MetadataAddress: http://keycloak:8080/realms/budgetbuddy/.well-known/openid-configuration
+      Kafka__BootstrapServers: kafka:9092
+      OpenTelemetry__OtlpEndpoint: http://jaeger:4317
+      Seq__ServerUrl: http://seq:5341
+      ClamAV__ServerUrl: clamav
+      ClamAV__Port: 3310
+      ServiceAuth__InternalApiKey: ${INTERNAL_API_KEY:-dev-internal-key-change-in-prod}
+    depends_on:
+      transactions-db:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+
+  wlv-budgets-service:
+    hostname: budgets-service
+    build:
+      context: .
+      dockerfile: Services/BudgetBuddy.Service.Budgets/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=budgets-db;Port=5432;Database=budgets;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}"
+      ConnectionStrings__Redis: "redis:6379"
+      Keycloak__Authority: http://keycloak:8080/realms/budgetbuddy
+      Keycloak__MetadataAddress: http://keycloak:8080/realms/budgetbuddy/.well-known/openid-configuration
+      Kafka__BootstrapServers: kafka:9092
+      OpenTelemetry__OtlpEndpoint: http://jaeger:4317
+      Seq__ServerUrl: http://seq:5341
+      ClamAV__ServerUrl: clamav
+      ClamAV__Port: 3310
+      ServiceAuth__InternalApiKey: ${INTERNAL_API_KEY:-dev-internal-key-change-in-prod}
+    depends_on:
+      budgets-db:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      clamav:
+        condition: service_healthy
+
+  wlv-financial-service:
+    hostname: financial-service
+    build:
+      context: .
+      dockerfile: Services/BudgetBuddy.Service.Financial/Dockerfile
+    ports:
+      - "5008:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__Redis: "redis:6379"
+      Keycloak__Authority: http://keycloak:8080/realms/budgetbuddy
+      Keycloak__MetadataAddress: http://keycloak:8080/realms/budgetbuddy/.well-known/openid-configuration
+      OpenTelemetry__OtlpEndpoint: http://jaeger:4317
+      Seq__ServerUrl: http://seq:5341
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    depends_on:
+      keycloak:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  wlv-investments-service:
+    hostname: investments-service
+    build:
+      context: .
+      dockerfile: Services/BudgetBuddy.Service.Investments/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=investments-db;Port=5432;Database=investments;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}"
+      ConnectionStrings__Redis: "redis:6379"
+      Keycloak__Authority: http://keycloak:8080/realms/budgetbuddy
+      Keycloak__MetadataAddress: http://keycloak:8080/realms/budgetbuddy/.well-known/openid-configuration
+      Kafka__BootstrapServers: kafka:9092
+      OpenTelemetry__OtlpEndpoint: http://jaeger:4317
+      Seq__ServerUrl: http://seq:5341
+      ServiceAuth__InternalApiKey: ${INTERNAL_API_KEY:-dev-internal-key-change-in-prod}
+      FinancialService__BaseUrl: http://financial-service:8080
+    depends_on:
+      investments-db:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      wlv-financial-service:
+        condition: service_healthy
+
+  wlv-analytics-service:
+    hostname: analytics-service
+    build:
+      context: .
+      dockerfile: Services/BudgetBuddy.Service.Analytics/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=analytics-db;Port=5432;Database=analytics;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}"
+      ConnectionStrings__Redis: "redis:6379"
+      Keycloak__Authority: http://keycloak:8080/realms/budgetbuddy
+      Keycloak__MetadataAddress: http://keycloak:8080/realms/budgetbuddy/.well-known/openid-configuration
+      Kafka__BootstrapServers: kafka:9092
+      OpenTelemetry__OtlpEndpoint: http://jaeger:4317
+      Seq__ServerUrl: http://seq:5341
+      ServiceAuth__InternalApiKey: ${INTERNAL_API_KEY:-dev-internal-key-change-in-prod}
+      FinancialService__BaseUrl: http://financial-service:8080
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/health/ready || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      analytics-db:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      wlv-financial-service:
+        condition: service_healthy
+
+  wlv-referencedata-service:
+    hostname: referencedata-service
+    build:
+      context: .
+      dockerfile: Services/BudgetBuddy.Service.ReferenceData/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ConnectionStrings__DefaultConnection: "Host=referencedata-db;Port=5432;Database=referencedata;Username=postgres;Password=${POSTGRES_PASSWORD:-postgres}"
+      ConnectionStrings__Redis: "redis:6379"
+      Keycloak__Authority: http://keycloak:8080/realms/budgetbuddy
+      Keycloak__MetadataAddress: http://keycloak:8080/realms/budgetbuddy/.well-known/openid-configuration
+      Kafka__BootstrapServers: kafka:9092
+      OpenTelemetry__OtlpEndpoint: http://jaeger:4317
+      Seq__ServerUrl: http://seq:5341
+    depends_on:
+      referencedata-db:
+        condition: service_healthy
+      kafka-init:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+
+  wlv-notifications-service:
+    hostname: notifications-service
+    build:
+      context: .
+      dockerfile: Services/BudgetBuddy.Service.Notifications/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      Kafka__BootstrapServers: kafka:9092
+      OpenTelemetry__OtlpEndpoint: http://jaeger:4317
+      Seq__ServerUrl: http://seq:5341
+    depends_on:
+      kafka-init:
+        condition: service_completed_successfully
+
+volumes:
+  keycloak-db-data:
+  kafka-data:
+  clamav-db:
+  redis-data:
+  seq-data:
+  grafana-data:
+  accounts-db-data:
+  transactions-db-data:
+  budgets-db-data:
+  investments-db-data:
+  analytics-db-data:
+  referencedata-db-data:
+  notifications-db-data:

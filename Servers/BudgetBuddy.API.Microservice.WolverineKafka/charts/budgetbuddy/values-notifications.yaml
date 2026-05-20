@@ -1,0 +1,12 @@
+service:
+  name: budgetbuddy-notifications
+image:
+  repository: budgetbuddy/notifications
+secretName: budgetbuddy-notifications-secret
+config:
+  ASPNETCORE_ENVIRONMENT: Production
+  OpenTelemetry__OtlpEndpoint: "http://otel-collector:4317"
+  Seq__ServerUrl: "http://seq:5341"
+autoscaling:
+  minReplicas: 1
+  maxReplicas: 4

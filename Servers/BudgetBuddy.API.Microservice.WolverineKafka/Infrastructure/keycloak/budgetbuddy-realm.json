@@ -1,0 +1,110 @@
+{
+  "realm": "budgetbuddy",
+  "enabled": true,
+  "displayName": "BudgetBuddy",
+  "accessTokenLifespan": 900,
+  "ssoSessionMaxLifespan": 86400,
+  "ssoSessionIdleTimeout": 3600,
+  "refreshTokenMaxReuse": 0,
+  "revokeRefreshToken": true,
+  "registrationAllowed": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "resetPasswordAllowed": true,
+  "editUsernameAllowed": false,
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "maxFailureWaitSeconds": 900,
+  "minimumQuickLoginWaitSeconds": 60,
+  "waitIncrementSeconds": 60,
+  "quickLoginCheckMilliSeconds": 1000,
+  "maxDeltaTimeSeconds": 43200,
+  "failureFactor": 5,
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA1",
+  "otpPolicyInitialCounter": 0,
+  "otpPolicyDigits": 6,
+  "otpPolicyLookAheadWindow": 1,
+  "otpPolicyPeriod": 30,
+  "roles": {
+    "realm": [
+      { "name": "user",              "description": "Regular user" },
+      { "name": "budgetbuddy-admin", "description": "Administrator" }
+    ]
+  },
+  "defaultRoles": ["user"],
+  "users": [
+    {
+      "username": "user@budgetbuddy.dev",
+      "email": "user@budgetbuddy.dev",
+      "firstName": "Test",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["user"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Password123!",
+          "temporary": false
+        }
+      ]
+    },
+    {
+      "username": "admin@budgetbuddy.dev",
+      "email": "admin@budgetbuddy.dev",
+      "firstName": "Admin",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "realmRoles": ["user", "budgetbuddy-admin"],
+      "credentials": [
+        {
+          "type": "password",
+          "value": "Admin123!",
+          "temporary": false
+        }
+      ]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "budgetbuddy-api",
+      "name": "BudgetBuddy API",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "budgetbuddy-secret-change-in-production",
+      "publicClient": false,
+      "serviceAccountsEnabled": true,
+      "directAccessGrantsEnabled": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "redirectUris": [
+        "http://localhost:5000/*",
+        "http://api-gateway:8080/*"
+      ],
+      "webOrigins": [
+        "http://localhost:5000",
+        "http://localhost:3000"
+      ],
+      "protocol": "openid-connect",
+      "attributes": {
+        "access.token.lifespan": "900"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.client.audience": "budgetbuddy-api",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ]
+}

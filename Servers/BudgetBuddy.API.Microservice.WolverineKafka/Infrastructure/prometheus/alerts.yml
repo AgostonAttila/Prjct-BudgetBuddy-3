@@ -1,0 +1,120 @@
+groups:
+
+  # ── DLQ Alerts ───────────────────────────────────────────────────────────────
+
+  - name: kafka_dlq
+    rules:
+      - alert: KafkaDlqMessageDetected
+        expr: increase(kafka_messages_sent_to_dlq_total[5m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DLQ üzenet érkezett ({{ $labels.job }})"
+          description: "{{ $value }} üzenet került DLQ-ba az elmúlt 5 percben. Service: {{ $labels.job }}, EventType: {{ $labels.event_type }}"
+
+      - alert: KafkaDlqGrowing
+        expr: increase(kafka_messages_sent_to_dlq_total[1h]) > 5
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DLQ gyorsan növekszik ({{ $labels.job }})"
+          description: "Több mint 5 üzenet került DLQ-ba az elmúlt 1 órában. Kézi beavatkozás szükséges."
+
+  # ── Kafka Consumer Alerts ────────────────────────────────────────────────────
+
+  - name: kafka_consumer
+    rules:
+      - alert: KafkaConsumerHighFailureRate
+        expr: rate(kafka_messages_failed_total[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Magas Kafka feldolgozási hibaszám ({{ $labels.job }})"
+          description: "A consumer {{ $value | humanize }} üzenetet/mp hibával dolgoz fel. Topic: {{ $labels.topic }}"
+
+      - alert: KafkaPublishFailure
+        expr: increase(kafka_messages_failed_total[10m]) > 10
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Kafka publish hibák ({{ $labels.job }})"
+          description: "{{ $value }} üzenet nem lett elküldve az elmúlt 10 percben."
+
+  # ── Service Health Alerts ────────────────────────────────────────────────────
+
+  - name: service_health
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Service leállt: {{ $labels.job }}"
+          description: "A {{ $labels.job }} service több mint 1 perce nem elérhető ({{ $labels.instance }})."
+
+      - alert: ServiceHighErrorRate
+        expr: |
+          rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m])
+          /
+          rate(http_server_request_duration_seconds_count[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Magas hibaarány: {{ $labels.job }}"
+          description: "5xx hibaarány: {{ $value | humanizePercentage }} a {{ $labels.job }} service-en."
+
+      - alert: ServiceHighLatency
+        expr: |
+          histogram_quantile(0.95,
+            rate(http_server_request_duration_seconds_bucket[5m])
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Magas P95 latencia: {{ $labels.job }}"
+          description: "P95 válaszidő {{ $value | humanizeDuration }} a {{ $labels.job }} service-en (küszöb: 2s)."
+
+  # ── Kafka Consumer Lag Alerts ────────────────────────────────────────────────
+
+  - name: kafka_consumer_lag
+    rules:
+      - alert: KafkaConsumerLagHigh
+        expr: kafka_consumer_group_lag > 1000
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Magas consumer lag ({{ $labels.job }})"
+          description: "A {{ $labels.group }} consumer csoport {{ $value }} üzenettel lemarad a {{ $labels.topic }} topicban. Kézi ellenőrzés szükséges."
+
+      - alert: KafkaConsumerNotConsuming
+        expr: increase(kafka_messages_consumed_total[10m]) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Consumer nem fogyaszt üzenetet ({{ $labels.job }})"
+          description: "A {{ $labels.job }} service 10 perce nem dolgoz fel egyetlen üzenetet sem. A consumer esetleg leállt vagy nem tud csatlakozni a brokerhez."
+
+  # ── Outbox Alerts ────────────────────────────────────────────────────────────
+
+  - name: outbox
+    rules:
+      - alert: OutboxMessagesStuck
+        expr: |
+          increase(kafka_messages_sent_to_dlq_total[30m]) == 0
+          and
+          increase(kafka_messages_published_total[30m]) == 0
+        for: 30m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Outbox processor leállt? ({{ $labels.job }})"
+          description: "30 perce nem lett sem sikeres publish, sem DLQ küldés. Az OutboxProcessorJob esetleg leállt."

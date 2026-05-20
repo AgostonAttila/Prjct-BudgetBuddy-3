@@ -1,0 +1,14 @@
+service:
+  name: budgetbuddy-gateway
+  port: 8080
+  targetPort: 8080
+image:
+  repository: budgetbuddy/gateway
+secretName: budgetbuddy-gateway-secret
+config:
+  ASPNETCORE_ENVIRONMENT: Production
+  OpenTelemetry__OtlpEndpoint: "http://otel-collector:4317"
+  Seq__ServerUrl: "http://seq:5341"
+autoscaling:
+  minReplicas: 2
+  maxReplicas: 6

@@ -1,0 +1,17 @@
+global using BudgetBuddy.Service.Financial.Financial;
+global using BudgetBuddy.Service.Financial.Financial.Providers;
+global using BudgetBuddy.Shared.Infrastructure;
+global using BudgetBuddy.Shared.Infrastructure.Extensions;
+global using BudgetBuddy.Shared.Infrastructure.Financial;
+global using BudgetBuddy.Shared.Kernel.Enums;
+global using BudgetBuddy.Shared.Messages.Contracts.Financial;
+global using Carter;
+global using MediatR;
+global using Microsoft.AspNetCore.Builder;
+global using Microsoft.AspNetCore.Http;
+global using Microsoft.AspNetCore.Http.HttpResults;
+global using Microsoft.AspNetCore.Routing;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Logging;
+global using NodaTime;

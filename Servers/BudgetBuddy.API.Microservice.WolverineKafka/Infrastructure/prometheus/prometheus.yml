@@ -1,0 +1,47 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: 'api-gateway'
+    static_configs:
+      - targets: ['api-gateway:8080']
+    metrics_path: /metrics
+
+  - job_name: 'accounts-service'
+    static_configs:
+      - targets: ['accounts-service:8080']
+    metrics_path: /metrics
+
+  - job_name: 'transactions-service'
+    static_configs:
+      - targets: ['transactions-service:8080']
+    metrics_path: /metrics
+
+  - job_name: 'budgets-service'
+    static_configs:
+      - targets: ['budgets-service:8080']
+    metrics_path: /metrics
+
+  - job_name: 'investments-service'
+    static_configs:
+      - targets: ['investments-service:8080']
+    metrics_path: /metrics
+
+  - job_name: 'analytics-service'
+    static_configs:
+      - targets: ['analytics-service:8080']
+    metrics_path: /metrics
+
+  - job_name: 'referencedata-service'
+    static_configs:
+      - targets: ['referencedata-service:8080']
+    metrics_path: /metrics
+
+  - job_name: 'notifications-service'
+    static_configs:
+      - targets: ['notifications-service:8080']
+    metrics_path: /metrics

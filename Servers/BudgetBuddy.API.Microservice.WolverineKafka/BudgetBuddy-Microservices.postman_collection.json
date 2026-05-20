@@ -1,0 +1,1081 @@
+{
+  "info": {
+    "_postman_id": "budgetbuddy-microservices-2026",
+    "name": "BudgetBuddy Microservices API",
+    "description": "API collection for BudgetBuddy Microservices\n\n## Setup\n1. Indítsd el: `docker compose up -d`\n2. Várj ~60s amíg minden konténer healthy lesz\n3. Futtasd a **Get Token** requestet — automatikusan beállítja a `bearerToken` változót\n4. Ha nincs még user: Keycloak Admin UI → http://localhost:8080 (admin/admin) → budgetbuddy realm → Users → Add user\n\n## Változók\n- `baseUrl`: http://localhost:5000 (API Gateway)\n- `accountsUrl`: http://localhost:5001\n- `analyticsUrl`: http://localhost:5002\n- `budgetsUrl`: http://localhost:5003\n- `investmentsUrl`: http://localhost:5004\n- `notificationsUrl`: http://localhost:5005\n- `referencedataUrl`: http://localhost:5006\n- `transactionsUrl`: http://localhost:5007\n- `financialUrl`: http://localhost:5008\n- `keycloakUrl`: http://localhost:8080\n- `bearerToken`: automatikusan töltődik Get Token után\n\n## Gateway routing\nMinden kérés az API Gateway-en (5000) át megy:\n- /api/accounts → accounts-service\n- /api/transactions, /api/transfers → transactions-service\n- /api/budgets, /api/budget-alerts → budgets-service\n- /api/investments, /api/portfolio → investments-service\n- /api/dashboard, /api/reports → analytics-service\n- /api/categories, /api/category-types, /api/currencies → referencedata-service\n- /api/prices → financial-service\n- /auth → keycloak",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{bearerToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl",             "value": "http://localhost:5000", "type": "string" },
+    { "key": "accountsUrl",         "value": "http://localhost:5001", "type": "string" },
+    { "key": "analyticsUrl",        "value": "http://localhost:5002", "type": "string" },
+    { "key": "budgetsUrl",          "value": "http://localhost:5003", "type": "string" },
+    { "key": "investmentsUrl",      "value": "http://localhost:5004", "type": "string" },
+    { "key": "notificationsUrl",    "value": "http://localhost:5005", "type": "string" },
+    { "key": "referencedataUrl",    "value": "http://localhost:5006", "type": "string" },
+    { "key": "transactionsUrl",     "value": "http://localhost:5007", "type": "string" },
+    { "key": "financialUrl",        "value": "http://localhost:5008", "type": "string" },
+    { "key": "keycloakUrl",         "value": "http://localhost:8080", "type": "string" },
+    { "key": "bearerToken",   "value": "", "type": "string" },
+    { "key": "refreshToken",  "value": "", "type": "string" },
+    { "key": "adminToken",    "value": "", "type": "string" },
+    { "key": "testUsername",  "value": "user@budgetbuddy.dev", "type": "string" },
+    { "key": "testPassword",  "value": "Password123!", "type": "string" },
+    { "key": "adminUsername", "value": "admin@budgetbuddy.dev", "type": "string" },
+    { "key": "adminPassword", "value": "Admin123!", "type": "string" },
+    { "key": "accountId",     "value": "", "type": "string" },
+    { "key": "transactionId", "value": "", "type": "string" },
+    { "key": "budgetId",      "value": "", "type": "string" },
+    { "key": "categoryId",    "value": "", "type": "string" },
+    { "key": "categoryTypeId","value": "", "type": "string" },
+    { "key": "investmentId",  "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "🔐 Auth (Keycloak)",
+      "item": [
+        {
+          "name": "Get Token (password grant)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Got access token', function () {",
+                  "    var json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('access_token');",
+                  "    pm.collectionVariables.set('bearerToken', json.access_token);",
+                  "    console.log('Token set. Expires in: ' + json.expires_in + 's');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type",    "value": "password" },
+                { "key": "client_id",     "value": "budgetbuddy-api" },
+                { "key": "client_secret", "value": "budgetbuddy-secret-change-in-production" },
+                { "key": "username",      "value": "{{testUsername}}" },
+                { "key": "password",      "value": "{{testPassword}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/realms/budgetbuddy/protocol/openid-connect/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "realms", "budgetbuddy", "protocol", "openid-connect", "token"]
+            },
+            "description": "Keycloak password grant. Token automatikusan bekerül a bearerToken változóba.\n\nElőtte hozz létre usert: http://localhost:8080 → admin/admin → Realm: budgetbuddy → Users"
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.access_token) {",
+                  "    pm.collectionVariables.set('bearerToken', json.access_token);",
+                  "    pm.collectionVariables.set('refreshToken', json.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/x-www-form-urlencoded" }
+            ],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "grant_type",    "value": "refresh_token" },
+                { "key": "client_id",     "value": "budgetbuddy-api" },
+                { "key": "client_secret", "value": "budgetbuddy-secret-change-in-production" },
+                { "key": "refresh_token", "value": "{{refreshToken}}" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/realms/budgetbuddy/protocol/openid-connect/token",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "realms", "budgetbuddy", "protocol", "openid-connect", "token"]
+            }
+          }
+        },
+        {
+          "name": "Keycloak Admin — Create User",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// Először admin tokent kér, majd azzal hozza létre a usert",
+                  "pm.sendRequest({",
+                  "    url: pm.collectionVariables.get('keycloakUrl') + '/realms/master/protocol/openid-connect/token',",
+                  "    method: 'POST',",
+                  "    header: { 'Content-Type': 'application/x-www-form-urlencoded' },",
+                  "    body: {",
+                  "        mode: 'urlencoded',",
+                  "        urlencoded: [",
+                  "            { key: 'grant_type', value: 'password' },",
+                  "            { key: 'client_id',  value: 'admin-cli' },",
+                  "            { key: 'username',   value: 'admin' },",
+                  "            { key: 'password',   value: 'admin' }",
+                  "        ]",
+                  "    }",
+                  "}, function(err, res) {",
+                  "    pm.collectionVariables.set('adminToken', res.json().access_token);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"user@example.com\",\n  \"email\": \"user@example.com\",\n  \"firstName\": \"Test\",\n  \"lastName\": \"User\",\n  \"enabled\": true,\n  \"emailVerified\": true,\n  \"credentials\": [\n    {\n      \"type\": \"password\",\n      \"value\": \"Password123!\",\n      \"temporary\": false\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{keycloakUrl}}/admin/realms/budgetbuddy/users",
+              "host": ["{{keycloakUrl}}"],
+              "path": ["admin", "realms", "budgetbuddy", "users"]
+            },
+            "description": "Admin API-n keresztül hoz létre usert. Keycloak Admin UI alternatíva: http://localhost:8080"
+          }
+        }
+      ]
+    },
+    {
+      "name": "💰 Accounts",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bearerToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create Account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('accountId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",   "value": "application/json" },
+              { "key": "Idempotency-Key","value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Folyószámla\",\n  \"description\": \"Fő bankszámla\",\n  \"defaultCurrencyCode\": \"HUF\",\n  \"initialBalance\": 500000.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts",
+              "host": ["{{baseUrl}}"], "path": ["api", "accounts"]
+            }
+          }
+        },
+        {
+          "name": "Get All Accounts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts",
+              "host": ["{{baseUrl}}"], "path": ["api", "accounts"]
+            }
+          }
+        },
+        {
+          "name": "Get Account Balance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/{{accountId}}/balance",
+              "host": ["{{baseUrl}}"], "path": ["api", "accounts", "{{accountId}}", "balance"]
+            }
+          }
+        },
+        {
+          "name": "Update Account",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Folyószámla (frissített)\",\n  \"description\": \"Fő bankszámla\",\n  \"defaultCurrencyCode\": \"HUF\",\n  \"initialBalance\": 600000.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/{{accountId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "accounts", "{{accountId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/accounts/{{accountId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "accounts", "{{accountId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💸 Transactions",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bearerToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create Transaction",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('transactionId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",   "value": "application/json" },
+              { "key": "Idempotency-Key","value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"categoryId\": null,\n  \"amount\": 5000.00,\n  \"currencyCode\": \"HUF\",\n  \"transactionType\": \"Expense\",\n  \"paymentType\": \"Card\",\n  \"note\": \"Bevásárlás\",\n  \"transactionDate\": \"2026-04-25\",\n  \"isTransfer\": false,\n  \"payee\": \"Spar\",\n  \"labels\": \"food,grocery\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions",
+              "host": ["{{baseUrl}}"], "path": ["api", "transactions"]
+            }
+          }
+        },
+        {
+          "name": "Get Transactions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions?pageNumber=1&pageSize=50&startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions"],
+              "query": [
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize",   "value": "50" },
+                { "key": "startDate",  "value": "2026-01-01" },
+                { "key": "endDate",    "value": "2026-12-31" },
+                { "key": "accountId",  "value": "{{accountId}}",  "disabled": true },
+                { "key": "categoryId", "value": "{{categoryId}}", "disabled": true },
+                { "key": "type",       "value": "Expense",        "disabled": true },
+                { "key": "search",     "value": "Spar",           "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Transaction",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"accountId\": \"{{accountId}}\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"amount\": 6000.00,\n  \"currencyCode\": \"HUF\",\n  \"transactionType\": \"Expense\",\n  \"paymentType\": \"Card\",\n  \"note\": \"Bevásárlás (frissítve)\",\n  \"transactionDate\": \"2026-04-25\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/{{transactionId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "transactions", "{{transactionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Transaction",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/{{transactionId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "transactions", "{{transactionId}}"]
+            }
+          }
+        },
+        {
+          "name": "Batch Delete Transactions",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\"{{transactionId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/batch",
+              "host": ["{{baseUrl}}"], "path": ["api", "transactions", "batch"]
+            }
+          }
+        },
+        {
+          "name": "Batch Update Transactions",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\"{{transactionId}}\"],\n  \"categoryId\": \"{{categoryId}}\",\n  \"labels\": \"updated,batch\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/batch",
+              "host": ["{{baseUrl}}"], "path": ["api", "transactions", "batch"]
+            }
+          }
+        },
+        {
+          "name": "Export Transactions (Excel)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/export?format=xlsx&startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "transactions", "export"],
+              "query": [
+                { "key": "format",    "value": "xlsx" },
+                { "key": "startDate", "value": "2026-01-01" },
+                { "key": "endDate",   "value": "2026-12-31" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Import Transactions (Excel)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": "" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transactions/import",
+              "host": ["{{baseUrl}}"], "path": ["api", "transactions", "import"]
+            },
+            "description": "Max 10MB, max 10 000 sor, .xlsx/.xls"
+          }
+        }
+      ]
+    },
+    {
+      "name": "🔄 Transfers",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bearerToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create Transfer",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",   "value": "application/json" },
+              { "key": "Idempotency-Key","value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromAccountId\": \"{{accountId}}\",\n  \"toAccountId\": \"IDE_MASIK_ACCOUNT_ID\",\n  \"amount\": 50000.00,\n  \"currencyCode\": \"HUF\",\n  \"paymentType\": \"BankTransfer\",\n  \"note\": \"Átutalás megtakarítási számlára\",\n  \"transferDate\": \"2026-04-25\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/transfers",
+              "host": ["{{baseUrl}}"], "path": ["api", "transfers"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💼 Budgets",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bearerToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create Budget",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('budgetId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",   "value": "application/json" },
+              { "key": "Idempotency-Key","value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Havi élelmiszer\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"amount\": 80000.00,\n  \"currencyCode\": \"HUF\",\n  \"year\": 2026,\n  \"month\": 4\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/budgets",
+              "host": ["{{baseUrl}}"], "path": ["api", "budgets"]
+            }
+          }
+        },
+        {
+          "name": "Get Budgets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/budgets?year=2026&month=4",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "budgets"],
+              "query": [
+                { "key": "year",       "value": "2026" },
+                { "key": "month",      "value": "4" },
+                { "key": "categoryId", "value": "{{categoryId}}", "disabled": true },
+                { "key": "pageNumber", "value": "1",              "disabled": true },
+                { "key": "pageSize",   "value": "50",             "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Budget vs Actual",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/budgets/vs-actual?year=2026&month=4",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "budgets", "vs-actual"],
+              "query": [
+                { "key": "year",  "value": "2026" },
+                { "key": "month", "value": "4" }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Budget",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Havi élelmiszer (frissítve)\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"amount\": 90000.00,\n  \"currencyCode\": \"HUF\",\n  \"year\": 2026,\n  \"month\": 4\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/budgets/{{budgetId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "budgets", "{{budgetId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Budget",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/budgets/{{budgetId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "budgets", "{{budgetId}}"]
+            }
+          }
+        },
+        {
+          "name": "Get Budget Alerts",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/budget-alerts?year=2026&month=4",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "budget-alerts"],
+              "query": [
+                { "key": "year",  "value": "2026" },
+                { "key": "month", "value": "4" }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📈 Investments",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bearerToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create Investment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('investmentId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type",   "value": "application/json" },
+              { "key": "Idempotency-Key","value": "{{$guid}}" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"AAPL\",\n  \"name\": \"Apple Inc.\",\n  \"type\": \"Stock\",\n  \"quantity\": 10,\n  \"purchasePrice\": 175.00,\n  \"currencyCode\": \"USD\",\n  \"purchaseDate\": \"2026-04-25\",\n  \"note\": \"Hosszú távú tartás\",\n  \"accountId\": \"{{accountId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/investments",
+              "host": ["{{baseUrl}}"], "path": ["api", "investments"]
+            }
+          }
+        },
+        {
+          "name": "Get Investments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/investments?pageNumber=1&pageSize=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "investments"],
+              "query": [
+                { "key": "pageNumber", "value": "1" },
+                { "key": "pageSize",   "value": "50" },
+                { "key": "type",       "value": "Stock",  "disabled": true },
+                { "key": "search",     "value": "Apple",  "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Portfolio Value",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/portfolio/value?currency=USD",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "portfolio", "value"],
+              "query": [{ "key": "currency", "value": "USD" }]
+            }
+          }
+        },
+        {
+          "name": "Update Investment",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"symbol\": \"AAPL\",\n  \"name\": \"Apple Inc.\",\n  \"type\": \"Stock\",\n  \"quantity\": 15,\n  \"purchasePrice\": 175.00,\n  \"currencyCode\": \"USD\",\n  \"purchaseDate\": \"2026-04-25\",\n  \"note\": \"Bővítve\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/{{investmentId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "investments", "{{investmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Investment",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/{{investmentId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "investments", "{{investmentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Batch Delete Investments",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ids\": [\"{{investmentId}}\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/batch",
+              "host": ["{{baseUrl}}"], "path": ["api", "investments", "batch"]
+            }
+          }
+        },
+        {
+          "name": "Export Investments (Excel)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/investments/export?format=xlsx",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "investments", "export"],
+              "query": [{ "key": "format", "value": "xlsx" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💹 Financial Prices",
+      "item": [
+        {
+          "name": "Get Current Prices (via Gateway)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/prices/current?symbols=BTC:Crypto,AAPL:Stock,ETH:Crypto&currency=USD",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "prices", "current"],
+              "query": [
+                { "key": "symbols",  "value": "BTC:Crypto,AAPL:Stock,ETH:Crypto" },
+                { "key": "currency", "value": "USD" }
+              ]
+            },
+            "description": "Élő árak lekérése. Format: symbol:type párok vesszővel elválasztva.\nTípusok: Crypto, Stock, Etf, MutualFund, Bond, RealEstate\nCurrency: USD, EUR, HUF, stb."
+          }
+        },
+        {
+          "name": "Get Current Prices (direct)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{financialUrl}}/api/prices/current?symbols=BTC:Crypto,AAPL:Stock&currency=HUF",
+              "host": ["{{financialUrl}}"],
+              "path": ["api", "prices", "current"],
+              "query": [
+                { "key": "symbols",  "value": "BTC:Crypto,AAPL:Stock" },
+                { "key": "currency", "value": "HUF" }
+              ]
+            },
+            "description": "Direktben a Financial service-re (gateway nélkül). Port 5008."
+          }
+        }
+      ]
+    },
+    {
+      "name": "📊 Analytics",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bearerToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Get Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard",
+              "host": ["{{baseUrl}}"], "path": ["api", "dashboard"]
+            }
+          }
+        },
+        {
+          "name": "Get Income vs Expense",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/income-vs-expense?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "income-vs-expense"],
+              "query": [
+                { "key": "startDate",       "value": "2026-01-01" },
+                { "key": "endDate",         "value": "2026-12-31" },
+                { "key": "accountId",       "value": "", "disabled": true },
+                { "key": "displayCurrency", "value": "USD", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Spending by Category",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/spending-by-category?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "spending-by-category"],
+              "query": [
+                { "key": "startDate",       "value": "2026-01-01" },
+                { "key": "endDate",         "value": "2026-12-31" },
+                { "key": "accountId",       "value": "", "disabled": true },
+                { "key": "displayCurrency", "value": "USD", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Monthly Summary",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/monthly-summary?year=2026&month=4",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "monthly-summary"],
+              "query": [
+                { "key": "year",            "value": "2026" },
+                { "key": "month",           "value": "4" },
+                { "key": "accountId",       "value": "", "disabled": true },
+                { "key": "displayCurrency", "value": "USD", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Investment Performance",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/investment-performance?startDate=2026-01-01&endDate=2026-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "reports", "investment-performance"],
+              "query": [
+                { "key": "startDate",       "value": "2026-01-01" },
+                { "key": "endDate",         "value": "2026-12-31" },
+                { "key": "type",            "value": "Stock", "disabled": true },
+                { "key": "displayCurrency", "value": "USD", "disabled": true }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏷️ Categories",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bearerToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create Category",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('categoryId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Élelmiszer\",\n  \"icon\": \"🛒\",\n  \"color\": \"#4CAF50\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": ["{{baseUrl}}"], "path": ["api", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Get Categories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories",
+              "host": ["{{baseUrl}}"], "path": ["api", "categories"]
+            }
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Élelmiszer & Ital\",\n  \"icon\": \"🛒\",\n  \"color\": \"#388E3C\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "categories", "{{categoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "categories", "{{categoryId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏷️ Category Types",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bearerToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Create Category Type",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "if (json.id) pm.collectionVariables.set('categoryTypeId', json.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Előfizetés\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"icon\": \"📦\",\n  \"color\": \"#2196F3\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/category-types",
+              "host": ["{{baseUrl}}"], "path": ["api", "category-types"]
+            }
+          }
+        },
+        {
+          "name": "Get Category Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/category-types?page=1&pageSize=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "category-types"],
+              "query": [
+                { "key": "page",       "value": "1" },
+                { "key": "pageSize",   "value": "50" },
+                { "key": "categoryId", "value": "{{categoryId}}", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Update Category Type",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Havi előfizetés\",\n  \"categoryId\": \"{{categoryId}}\",\n  \"icon\": \"📦\",\n  \"color\": \"#1976D2\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/category-types/{{categoryTypeId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "category-types", "{{categoryTypeId}}"]
+            }
+          }
+        },
+        {
+          "name": "Delete Category Type",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/category-types/{{categoryTypeId}}",
+              "host": ["{{baseUrl}}"], "path": ["api", "category-types", "{{categoryTypeId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "💱 Currencies",
+      "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{bearerToken}}", "type": "string" }] },
+      "item": [
+        {
+          "name": "Get Currencies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/currencies",
+              "host": ["{{baseUrl}}"], "path": ["api", "currencies"]
+            }
+          }
+        },
+        {
+          "name": "Create Currency",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"HUF\",\n  \"name\": \"Magyar forint\",\n  \"symbol\": \"Ft\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/currencies",
+              "host": ["{{baseUrl}}"], "path": ["api", "currencies"]
+            }
+          }
+        },
+        {
+          "name": "Update Currency",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"HUF\",\n  \"name\": \"Magyar forint\",\n  \"symbol\": \"Ft\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/currencies/IDE_CURRENCY_ID",
+              "host": ["{{baseUrl}}"], "path": ["api", "currencies", "IDE_CURRENCY_ID"]
+            }
+          }
+        },
+        {
+          "name": "Delete Currency",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/currencies/IDE_CURRENCY_ID",
+              "host": ["{{baseUrl}}"], "path": ["api", "currencies", "IDE_CURRENCY_ID"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "🏥 Health",
+      "item": [
+        {
+          "name": "Gateway Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"], "path": ["health"]
+            }
+          }
+        },
+        {
+          "name": "Accounts Service — Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{accountsUrl}}/health/ready",
+              "host": ["{{accountsUrl}}"],
+              "path": ["health", "ready"]
+            },
+            "description": "Direktben a service-re (nem gateway-en át). Port: accounts=5001, analytics=5002, budgets=5003, investments=5004, notifications=5005, referencedata=5006, transactions=5007, financial=5008"
+          }
+        },
+        {
+          "name": "Financial Service — Health",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{financialUrl}}/health/ready",
+              "host": ["{{financialUrl}}"],
+              "path": ["health", "ready"]
+            },
+            "description": "Stateless service — nincs DB dependency. CoinGecko + Yahoo Finance proxy."
+          }
+        },
+        {
+          "name": "Kafka UI",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8090",
+              "host": ["localhost"],
+              "port": "8090"
+            },
+            "description": "Kafka topic-ok, consumer groups, üzenetek böngészése"
+          }
+        },
+        {
+          "name": "Keycloak Admin UI",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:8080",
+              "host": ["localhost"],
+              "port": "8080"
+            },
+            "description": "admin / admin — budgetbuddy realm → Users → Add user"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+# Secrets — never commit
+.env
+.env.local
+.env.*.local
+secrets.json
+**/secrets.json
+
+# Certificates & keys
+*.pem
+*.pfx
+*.key
+*.jks
+*.p12
+*.cer
+
+# ASP.NET Core Data Protection keys (local dev)
+/tmp/dp-keys/
+
+# Local appsettings overrides
+appsettings.*.local.json
+
+# User-specific files
+*.user
+*.suo
+.vs/
+
+# Build outputs
+**/bin/
+**/obj/
+
+# Rider / JetBrains
+.idea/
+
+# Test results & coverage
+**/TestResults/
+**/*.trx
+**/coverage.cobertura.xml
+**/coverage.opencover.xml

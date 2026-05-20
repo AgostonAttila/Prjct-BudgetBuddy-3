@@ -1,0 +1,15 @@
+<Project>
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!-- A-02: treat all C# compiler warnings as errors; prevents silent quality regressions -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Enforce IDE code style rules during build (formatting, naming, etc.) -->
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+
+  <!-- A-32: SonarAnalyzer on every non-test project; PrivateAssets=all keeps it off consumers -->
+  <ItemGroup Condition="'$(IsTestProject)' != 'true'">
+    <PackageReference Include="SonarAnalyzer.CSharp" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

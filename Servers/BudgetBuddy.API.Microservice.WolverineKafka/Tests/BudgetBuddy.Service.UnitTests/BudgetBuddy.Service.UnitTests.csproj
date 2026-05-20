@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="AutoFixture" />
+    <PackageReference Include="AutoFixture.AutoNSubstitute" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
+    <PackageReference Include="NodaTime.Serialization.SystemTextJson" />
+    <PackageReference Include="WolverineFx" />
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Shared/BudgetBuddy.Shared.Messages/BudgetBuddy.Shared.Messages.csproj" />
+    <ProjectReference Include="../../Shared/BudgetBuddy.Shared.Infrastructure/BudgetBuddy.Shared.Infrastructure.csproj" />
+    <ProjectReference Include="../../Services/BudgetBuddy.Service.Accounts/BudgetBuddy.Service.Accounts.csproj" />
+    <ProjectReference Include="../../Services/BudgetBuddy.Service.Budgets/BudgetBuddy.Service.Budgets.csproj" />
+    <ProjectReference Include="../../Services/BudgetBuddy.Service.Investments/BudgetBuddy.Service.Investments.csproj" />
+    <ProjectReference Include="../../Services/BudgetBuddy.Service.Transactions/BudgetBuddy.Service.Transactions.csproj" />
+    <ProjectReference Include="../../Services/BudgetBuddy.Service.Analytics/BudgetBuddy.Service.Analytics.csproj" />
+    <ProjectReference Include="../../Services/BudgetBuddy.Service.Notifications/BudgetBuddy.Service.Notifications.csproj" />
+    <ProjectReference Include="../../Services/BudgetBuddy.Service.ReferenceData/BudgetBuddy.Service.ReferenceData.csproj" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,26 @@
+<Solution>
+  <Folder Name="/Gateway/">
+    <Project Path="Gateway/BudgetBuddy.Gateway/BudgetBuddy.Gateway.csproj" />
+  </Folder>
+  <Folder Name="/Services/">
+    <Project Path="Services/BudgetBuddy.Service.Accounts/BudgetBuddy.Service.Accounts.csproj" />
+    <Project Path="Services/BudgetBuddy.Service.Analytics/BudgetBuddy.Service.Analytics.csproj" />
+    <Project Path="Services/BudgetBuddy.Service.Budgets/BudgetBuddy.Service.Budgets.csproj" />
+    <Project Path="Services/BudgetBuddy.Service.Financial/BudgetBuddy.Service.Financial.csproj" />
+    <Project Path="Services/BudgetBuddy.Service.Investments/BudgetBuddy.Service.Investments.csproj" />
+    <Project Path="Services/BudgetBuddy.Service.Notifications/BudgetBuddy.Service.Notifications.csproj" />
+    <Project Path="Services/BudgetBuddy.Service.ReferenceData/BudgetBuddy.Service.ReferenceData.csproj" />
+    <Project Path="Services/BudgetBuddy.Service.Transactions/BudgetBuddy.Service.Transactions.csproj" />
+  </Folder>
+  <Folder Name="/Shared/">
+    <Project Path="Shared/BudgetBuddy.Shared.Messages/BudgetBuddy.Shared.Messages.csproj" />
+    <Project Path="Shared/BudgetBuddy.Shared.Infrastructure/BudgetBuddy.Shared.Infrastructure.csproj" />
+    <Project Path="Shared/BudgetBuddy.Shared.Kernel/BudgetBuddy.Shared.Kernel.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/BudgetBuddy.ArchitectureTests/BudgetBuddy.ArchitectureTests.csproj" />
+    <Project Path="Tests/BudgetBuddy.SharedKernel.UnitTests/BudgetBuddy.SharedKernel.UnitTests.csproj" />
+    <Project Path="Tests/BudgetBuddy.Integration.Tests/BudgetBuddy.Integration.Tests.csproj" />
+    <Project Path="Tests/BudgetBuddy.Service.UnitTests/BudgetBuddy.Service.UnitTests.csproj" />
+  </Folder>
+</Solution>

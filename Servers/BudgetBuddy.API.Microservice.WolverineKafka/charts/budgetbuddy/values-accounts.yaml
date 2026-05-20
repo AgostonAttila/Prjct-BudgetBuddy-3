@@ -1,0 +1,9 @@
+service:
+  name: budgetbuddy-accounts
+image:
+  repository: budgetbuddy/accounts
+secretName: budgetbuddy-accounts-secret
+config:
+  ASPNETCORE_ENVIRONMENT: Production
+  OpenTelemetry__OtlpEndpoint: "http://otel-collector:4317"
+  Seq__ServerUrl: "http://seq:5341"
